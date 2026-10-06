@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>아카이브 자료 모으기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --paper:#f2f4f8; --raised:#fff; --ink:#15233a; --ink-2:#4a5568; --ink-3:#8a93a3; --line:#dde3ec; --line-2:#edf0f5;
+  --run:#087b54; --run-bg:#e8f7ee; --hyg:#225ce0; --hyg-bg:#ebf1ff; --edu:#ba5016; --edu-bg:#fff1e7;
+  --ok:#087b54; --del:#b23a2e; --rep:#7a4f7a; --miss:#8a6d2b; --wait:#8a93a3;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Pretendard",system-ui,sans-serif;font-size:14.5px;line-height:1.55}
+button,input,select,textarea{font:inherit}
+header{background:#121e35;color:#fff;position:sticky;top:0;z-index:20}
+.hin{max-width:1180px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:36px;height:36px;border-radius:9px;background:#d9f85c;color:#142239;font-weight:900;display:grid;place-items:center;font-size:18px}
+.hin h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em}
+.hin small{display:block;color:#a7b7cd;font-size:11.5px;font-weight:500}
+.me{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#cfd8e6}
+.me b{color:#d9f85c}
+.me button{background:#26344e;border:0;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 80px}
+
+/* 진행 현황 */
+.stats{background:var(--raised);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--line-2);margin:10px 0 10px}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--ink-2)}
+.legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;background:var(--c)}
+.stats h2{margin:0;font-size:16px;font-weight:800}
+.stats h2 em{font-style:normal;color:var(--run)}
+.sync{float:right;font-size:11.5px;color:var(--ink-3)}
+.sync.off{color:var(--del);font-weight:700}
+
+/* 탭·필터 */
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--ink);margin:4px 0 12px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);border-bottom:none;background:#e7ebf2;border-radius:9px 9px 0 0;padding:9px 16px;font-weight:700;color:var(--ink-2);cursor:pointer;position:relative;top:2px}
+.tabs button.on{background:var(--raised);color:var(--ink);border:2px solid var(--ink);border-bottom:2px solid var(--raised)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filters input{flex:1;min-width:200px;border:1px solid var(--line);border-radius:9px;padding:9px 12px;background:#fff}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip.c운영.on{background:var(--run);border-color:var(--run)} .chip.c위생.on{background:var(--hyg);border-color:var(--hyg)} .chip.c교육.on{background:var(--edu);border-color:var(--edu)}
+
+/* 업무 그룹 */
+.grp{background:var(--raised);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.ghead{display:flex;align-items:center;gap:10px;padding:11px 16px;border-left:5px solid var(--c);background:var(--cbg);cursor:pointer;user-select:none}
+.ghead b{font-size:14.5px}
+.ghead .sub{font-size:12px;color:var(--ink-3)}
+.ghead .gp{margin-left:auto;font-size:12px;font-weight:700;color:var(--c)}
+.ghead .cv{font-size:11px;color:var(--ink-3);transition:transform .15s}
+.grp.shut .cv{transform:rotate(-90deg)} .grp.shut .rows{display:none}
+.g운영{--c:var(--run);--cbg:var(--run-bg)} .g위생{--c:var(--hyg);--cbg:var(--hyg-bg)} .g교육{--c:var(--edu);--cbg:var(--edu-bg)}
+
+.row{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;padding:12px 16px;border-top:1px solid var(--line-2);align-items:start}
+.row .no{font-family:ui-monospace,monospace;font-size:12.5px;font-weight:700;color:var(--ink-2);padding-top:2px}
+.row .t{font-weight:700;font-size:14px;word-break:keep-all}
+.row .t.struck{text-decoration:line-through;color:var(--ink-3)}
+.row .loc{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+.row .info{font-size:12px;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.st{font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:999px;color:#fff;background:var(--wait)}
+.st.완료{background:var(--ok)} .st.삭제{background:var(--del)} .st.교체{background:var(--rep)} .st.없음{background:var(--miss)}
+.who{color:var(--ink-3)}
+.fl{color:var(--ink);text-decoration:none;background:var(--paper);border-radius:6px;padding:2px 8px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fl:hover{text-decoration:underline}
+.memo{margin-top:7px;width:100%;border:1px dashed var(--line);border-radius:8px;padding:6px 9px;font-size:12.5px;background:#fbfcfe;resize:vertical;min-height:32px}
+.memo:focus{outline:none;border-style:solid;border-color:var(--ink-3);background:#fff}
+.acts{display:flex;flex-direction:column;gap:5px;min-width:132px}
+.acts button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:700;cursor:pointer;text-align:left;color:var(--ink-2);white-space:nowrap}
+.acts button:hover{background:var(--paper)}
+.acts .up{background:var(--ok);border-color:var(--ok);color:#fff}
+.acts .up:hover{background:#06633f}
+.acts .on{outline:2px solid var(--ink)}
+.busy{opacity:.55;pointer-events:none}
+.url{display:flex;gap:6px;margin-top:7px}
+.url input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;min-width:0}
+.gsrch{flex:0 0 auto;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12.5px;font-weight:700;color:var(--ink-2);text-decoration:none;background:#fff;white-space:nowrap}
+.gsrch:hover{background:var(--paper)}
+.linkhelp{flex-basis:100%;background:#eef4ff;border:1px solid #cfdcf7;border-radius:9px;padding:9px 12px;font-size:12.8px;color:#24406f}
+.uarea{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;resize:vertical;width:100%}
+.url{align-items:flex-start}
+.ucol{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.ulist{width:100%;display:flex;flex-direction:column;gap:6px}
+.ubox{display:flex;gap:6px;width:100%}
+.ubox .uin{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px}
+.ux{border:1px solid var(--line);background:#fff;border-radius:8px;width:32px;cursor:pointer;color:var(--ink-3)}
+.uadd{border:1px dashed var(--ink-3);background:#fff;border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:700;color:var(--ink-2);cursor:pointer}
+.uadd:hover{background:var(--paper)}
+.url > button{border:0;background:var(--ink);color:#fff;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer}
+
+/* 추가 자료 */
+.addform{background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;display:grid;gap:10px}
+.addform label{font-size:12px;font-weight:700;color:var(--ink-3)}
+.addform select,.addform input[type=text],.addform input[type=url]{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff}
+.addform .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.addform button.go{border:0;background:var(--run);color:#fff;border-radius:9px;padding:11px;font-weight:800;cursor:pointer}
+.help{background:#fffbea;border:1px solid #f1e3a6;border-radius:10px;padding:11px 14px;font-size:12.8px;color:#5c4a12;margin-bottom:12px}
+.help b{color:#3d3108}
+
+/* 시트 */
+.scrim{position:fixed;inset:0;background:rgba(15,25,45,.5);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+.scrim.on{display:flex}
+.sheet{background:#fff;border-radius:14px;max-width:460px;width:100%;padding:20px 20px 16px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.sheet h3{margin:0 0 4px;font-size:17px}
+.sheet p{margin:0 0 12px;font-size:13px;color:var(--ink-2)}
+.sheet input{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px}
+.sheet .btns{display:flex;gap:8px;justify-content:flex-end}
+.sheet .btns button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 16px;font-weight:700;cursor:pointer}
+.sheet .btns .pri{background:var(--ink);border-color:var(--ink);color:#fff}
+.err{color:var(--del);font-size:12.5px;min-height:18px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
+.toast.on{opacity:1}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;padding:14px 16px}
+.pcard{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.pcard img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--paper)}
+.pcard.del{opacity:.45} .pcard.del img{filter:grayscale(1)}
+.pbadge{position:absolute;top:8px;left:8px;background:#d9f85c;color:#142239;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px}
+.prow{font-size:11px;color:var(--ink-2);padding:6px 9px 0;line-height:1.4}
+.prow a{color:var(--hyg)}
+.pcap{border:0;border-top:1px solid var(--line-2);padding:7px 9px;font-size:12.5px;width:100%}
+.pcap:focus{outline:none;background:#fbfcfe}
+.pmeta{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 9px 8px;font-size:11px;color:var(--ink-3)}
+.pmeta button{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:6px;padding:2px 7px;font-size:11px;cursor:pointer}
+.prowline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px 16px;border-top:1px solid var(--line-2)}
+.prowline .pgrid{grid-column:1/-1;padding:4px 0 2px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.pname{font-size:13.5px;font-weight:600;word-break:keep-all}
+.pname small{display:block;font-size:11px;color:var(--ink-3);font-weight:500}
+.pupbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 12px;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.pupbtn:hover{background:var(--paper)}
+.empty{text-align:center;color:var(--ink-3);padding:40px 0}
+.demo{background:#fdeceb;color:#8a2a20;border:1px solid #f3cfcb;border-radius:10px;padding:10px 14px;font-size:12.8px;margin-bottom:12px}
+
+@media (max-width:720px){
+  .row{grid-template-columns:1fr;gap:6px}
+  .row .no{padding:0}
+  .acts{flex-direction:row;flex-wrap:wrap;min-width:0}
+  .acts button{flex:1 1 auto}
+  .addform .two{grid-template-columns:1fr}
+  .me span{display:none}
+}
+</style>
+</head>
+<body>
+<header><div class="hin">
+  <div class="logo">N</div>
+  <div><h1>영양 아카이브 · 자료 모으기</h1><small>팀원 선생님 공동 작업 화면 — 파일 올리기·교체·삭제·링크 입력</small></div>
+  <div class="me" id="me"></div>
+</div></header>
+
+<div class="wrap">
+  <div id="demo"></div>
+  <div class="stats">
+    <span class="sync" id="sync"></span>
+    <h2 id="sumTitle"></h2>
+    <div class="bar" id="bar"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="help">
+    <b>이렇게 해 주세요</b> — 자료마다 오른쪽 버튼 하나만 누르면 돼요. 파일 이름은 바꾸지 않아도 되고, 번호도 붙일 필요 없어요.<br>
+    📤 <b>파일 올리기</b>: 노션에서 받은 파일을 그대로 올리기 (여러 개면 한 번에 여러 개 선택) · 🔁 <b>파일 교체</b>: 새 판(예: 6차 개정)으로 바꿔 올리고 자료 이름도 고치기 · 🗑 <b>삭제</b>: 사이트에서 이름까지 빼기 · ❓ <b>노션에 없음</b>: 파일을 못 찾았을 때 · 메모는 칸에 쓰고 밖을 누르면 저장돼요. 노션 본문의 캡처·사진은 <b>🖼 사진</b> 탭에서, 영상은 <b>유튜브 링크</b>로 넣어 주세요. <b>노션은 수정하지 말아 주세요.</b>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="filters" id="filters"></div>
+  <div id="list"></div>
+</div>
+
+<div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="picker" multiple hidden>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+/* ===== 설정 ===== */
+const SUPABASE_URL = "https://gbhyrndbfxodbtnxczxa.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9IzD963c-hvHFmisPfd_Ag_YTFf4hp2";
+const TEAM_CODE    = "2026노션";      // 팀원끼리 공유하는 입장 코드
+const ADMIN_CODE   = "2026김소리";     // 관리자(전체 내려받기) 입장 코드
+const BUCKET = "archive-files", TABLE = "archive_items";
+const CATALOG = {"files": [{"id": "F001", "cat": "운영", "sub": "연간계획서", "item": "학교운영위원회 심의자료", "iid": "school-committee-review", "loc": "참고자료", "title": "2025년 학교운영위원회 업무편람(수정배포) p.240-245 (경기도교육청)", "folder": "01_학교운영위원회 심의자료", "fn": "2025년_학교운영위원회_업무편람(수정배포)p.240245.pdf"}, {"id": "F002", "cat": "운영", "sub": "연간계획서", "item": "학교운영위원회 심의자료", "iid": "school-committee-review", "loc": "참고자료", "title": "경기도교육청 학교운영위원회 급식 심의자료(초)", "folder": "01_학교운영위원회 심의자료", "fn": "경기도교육청_학교운영위원회_급식_심의자료(초).hwpx"}, {"id": "F003", "cat": "운영", "sub": "연간계획서", "item": "학교운영위원회 심의자료", "iid": "school-committee-review", "loc": "참고자료", "title": "경기도교육청 학교운영위원회 급식 심의자료(중)", "folder": "01_학교운영위원회 심의자료", "fn": "경기도교육청_학교운영위원회_급식_심의자료(중).hwpx"}, {"id": "F004", "cat": "운영", "sub": "연간계획서", "item": "학교운영위원회 심의자료", "iid": "school-committee-review", "loc": "참고자료", "title": "경기도교육청 학교운영위원회 급식 심의자료(고)", "folder": "01_학교운영위원회 심의자료", "fn": "경기도교육청_학교운영위원회_급식_심의자료(고).hwpx"}, {"id": "F005", "cat": "운영", "sub": "연간계획서", "item": "영양 식생활 교육 계획서", "iid": "nutrition-education-plan", "loc": "참고자료", "title": "영양교육 계획서(초) 예시", "folder": "02_영양 식생활 교육 계획서", "fn": "영양교육_계획서_초(예시).hwp"}, {"id": "F006", "cat": "운영", "sub": "연간계획서", "item": "영양 식생활 교육 계획서", "iid": "nutrition-education-plan", "loc": "참고자료", "title": "영양교육 계획서(중) 예시", "folder": "02_영양 식생활 교육 계획서", "fn": "영양교육_계획서_중(예시).hwp"}, {"id": "F007", "cat": "운영", "sub": "연간계획서", "item": "영양 식생활 교육 계획서", "iid": "nutrition-education-plan", "loc": "참고자료", "title": "2026년 학교급식 기본방향", "folder": "02_영양 식생활 교육 계획서", "fn": "2026년_학교급식_기본방향.pdf"}, {"id": "F008", "cat": "운영", "sub": "연간계획서", "item": "영양 식생활 교육 계획서", "iid": "nutrition-education-plan", "loc": "참고자료", "title": "2026 영양 식생활 교육 정책 기본계획", "folder": "02_영양 식생활 교육 계획서", "fn": "2026_영양_식생활_교육_정책_기본계획.pdf"}, {"id": "F009", "cat": "운영", "sub": "연간계획서", "item": "영양 식생활 교육 계획서", "iid": "nutrition-education-plan", "loc": "참고자료", "title": "경기도교육청 업무매뉴얼 - 식품안전 및 영양식생활교육", "folder": "02_영양 식생활 교육 계획서", "fn": "유2026_경기도교육청_업무매뉴얼_식품안전_및_영양식생활교육.pdf"}, {"id": "F010", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "급식소위원회", "iid": "lunch-subcommittee", "loc": "참고자료", "title": "학교급식소위원회 구성·운영 계획(안) 및 규정 예시안", "folder": "03_급식소위원회", "fn": "경기도교육청_2025년_학교운영위원회_업무편람_및_업무용_별지서식_2025.hwpx"}, {"id": "F011", "cat": "운영", "sub": "홈페이지 관리", "item": "알레르기 유발식품 표시제", "iid": "allergy-labeling", "loc": "참고자료", "title": "교육부, 식품 알레르기 교육 참고자료(2018)", "folder": "04_알레르기 유발식품 표시제", "fn": "교육부_식품_알레르기_교육_참고자료.pdf"}, {"id": "F012", "cat": "운영", "sub": "홈페이지 관리", "item": "축산물등급표시제", "iid": "livestock-grading", "loc": "참고자료", "title": "교육부·축산물품질평가원 맘편한서비스 보도자료(2014)", "folder": "05_축산물등급표시제", "fn": "교육부축산물품질평가원맘편한서비스보도자료.hwp"}, {"id": "F013", "cat": "운영", "sub": "홈페이지 관리", "item": "축산물등급표시제", "iid": "livestock-grading", "loc": "참고자료", "title": "축산물품질평가원 브로슈어(2025)", "folder": "05_축산물등급표시제", "fn": "축산물품질평가원_브로슈어(2025).pdf"}, {"id": "F014", "cat": "운영", "sub": "홈페이지 관리", "item": "축산물등급표시제", "iid": "livestock-grading", "loc": "참고자료", "title": "축산물품질평가원 소개 리플렛(2025)", "folder": "05_축산물등급표시제", "fn": "축산물품질평가원_소개_리플렛(2025).pdf"}, {"id": "F015", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "학교급식 설문조사", "iid": "food-survey", "loc": "참고자료", "title": "학교급식 설문조사(안) 예시", "folder": "06_학교급식 설문조사", "fn": "경기도교육청누리집_학교급식_만족도조사_2026.hwpx"}, {"id": "F016", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "학교급식 설문조사", "iid": "food-survey", "loc": "참고자료", "title": "학교급식 설문조사 결과분석표", "folder": "06_학교급식 설문조사", "fn": "경기도교육청_업무매뉴얼_학교급식_만족도_조사_결과분석표.xlsx"}, {"id": "F017", "cat": "운영", "sub": "예산 및 재정", "item": "소모품/비품 견적서", "iid": "supply-quotes", "loc": "참고자료", "title": "별표1 물품의 품종·상태 구분(경기도교육비특별회계 소관 물품관리조례)", "folder": "07_소모품·비품 견적서", "fn": "별표_1_물품의_품종상태_구분(경기도교육비특별회계_소관_물품관리조례).hwp"}, {"id": "F018", "cat": "운영", "sub": "연간계획서", "item": "학교급식 운영계획서", "iid": "operation-plan", "loc": "참고자료", "title": "학교급식 운영계획서(초/중/고) 예시안 (경기도교육청 학교업무매뉴얼)", "folder": "08_학교급식 운영계획서", "fn": "경기도교육청_학교급식_운영계획서(초/중/고).hwpx (3개 파일)"}, {"id": "F019", "cat": "운영", "sub": "연간계획서", "item": "학교급식 운영계획서", "iid": "operation-plan", "loc": "참고자료", "title": "별표3 학교급식의 영양관리기준(제5조제1항 관련, 2026.6.25 개정)", "folder": "08_학교급식 운영계획서", "fn": "별표_3_학교급식의_영양관리기준(제5조제1항_관련).pdf"}, {"id": "F020", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "급식모니터링", "iid": "meal-monitoring", "loc": "참고자료", "title": "교육부 학교급식 학부모 모니터단 운영안내서(2021)", "folder": "09_급식모니터링", "fn": "교육부_학교급식_학부모_모니터단_2021.pdf"}, {"id": "F021", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "급식모니터링", "iid": "meal-monitoring", "loc": "급식모니터링 절차 › 계획수립 — 3월", "title": "학부모 검수 및 모니터링 운영계획(안) 예시 이미지 3장", "folder": "09_급식모니터링", "fn": "학부모 검수 및 모니터링 운영계획(안) 예시 이미지 3장"}, {"id": "F022", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "급식모니터링", "iid": "meal-monitoring", "loc": "급식모니터링 절차 › 모니터단 신청안내 가정통신문 배부", "title": "모니터단 희망 조사서 안내문 예시 이미지", "folder": "09_급식모니터링", "fn": "모니터단 희망 조사서 안내문 예시 이미지"}, {"id": "F023", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "급식모니터링", "iid": "meal-monitoring", "loc": "급식모니터링 절차 › 학부모 모니터요원 구성·위촉·교육 — 4월", "title": "모니터링 참석안내 가정통신문·활동 일정 예시 이미지", "folder": "09_급식모니터링", "fn": "모니터링 참석안내 가정통신문·활동 일정 예시 이미지"}, {"id": "F024", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "급식모니터링", "iid": "meal-monitoring", "loc": "급식모니터링 절차 › 학부모 모니터요원 구성·위촉·교육 — 4월", "title": "모니터요원 사전교육자료 예시 이미지 2장", "folder": "09_급식모니터링", "fn": "모니터요원 사전교육자료 예시 이미지 2장"}, {"id": "F025", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "급식모니터링", "iid": "meal-monitoring", "loc": "급식모니터링 절차 › 학부모 모니터 활동 시작 — 학기 중 상시", "title": "검수 및 모니터링 참여자 건강문진표 예시 이미지", "folder": "09_급식모니터링", "fn": "검수 및 모니터링 참여자 건강문진표 예시 이미지"}, {"id": "F026", "cat": "운영", "sub": "수요자 참여 및 소통", "item": "급식모니터링", "iid": "meal-monitoring", "loc": "급식모니터링 절차 › 학부모 모니터 활동 시작 — 학기 중 상시", "title": "학교급식 검수 참관 기록지 예시 이미지", "folder": "09_급식모니터링", "fn": "학교급식 검수 참관 기록지 예시 이미지"}, {"id": "F027", "cat": "운영", "sub": "식단 및 조리", "item": "표준레시피", "iid": "standard-recipe", "loc": "참고자료", "title": "한국교육개발원 학교급식 식단작성 참고자료(2021)", "folder": "10_표준레시피", "fn": "한국교육개발원_학교급식_식단작성_참고자료.pdf"}, {"id": "F028", "cat": "운영", "sub": "식단 및 조리", "item": "표준레시피", "iid": "standard-recipe", "loc": "참고자료", "title": "학교급식 식단 및 레시피북(2025, 통합플랫폼)", "folder": "10_표준레시피", "fn": "교육부_17개교육청_한국교육환경보호원_학교급식_식단_및_레시피_참고자료.pdf"}, {"id": "F029", "cat": "운영", "sub": "식단 및 조리", "item": "표준레시피", "iid": "standard-recipe", "loc": "참고자료", "title": "건강하고 다양한 학교급식 레시피(KEEPA, 2026)", "folder": "10_표준레시피", "fn": "KEEPA건강하고_다양한_학교급식_레시피.pdf"}, {"id": "F030", "cat": "운영", "sub": "식단 및 조리", "item": "표준레시피", "iid": "standard-recipe", "loc": "참고자료", "title": "건강하고 맛있는 학교급식 오븐요리 레시피북(2025)", "folder": "10_표준레시피", "fn": "오븐요리레시피북.pdf"}, {"id": "F031", "cat": "운영", "sub": "식단 및 조리", "item": "표준레시피", "iid": "standard-recipe", "loc": "참고자료", "title": "지구를 사랑하는 학교급식 레시피북(광주광역시교육청, 2021)", "folder": "10_표준레시피", "fn": "지구를_사랑하는_학교급식_레시피북_광주광역시교육청(1).pdf"}, {"id": "F032", "cat": "운영", "sub": "식단 및 조리", "item": "표준레시피", "iid": "standard-recipe", "loc": "참고자료", "title": "2025년 제철달력(경기도교육청 교육급식연구회, 절기·제철식재료·대표메뉴)", "folder": "10_표준레시피", "fn": "2025년제철달력.pdf"}, {"id": "F033", "cat": "운영", "sub": "식단 및 조리", "item": "표준레시피", "iid": "standard-recipe", "loc": "참고자료", "title": "키워드로 공유하는 레시피 나눔(2024, 경기도교육청)", "folder": "10_표준레시피", "fn": "키워드로_공유하는_레시피_나눔-레시피(공유본)(1).pdf"}, {"id": "F034", "cat": "운영", "sub": "예산 및 재정", "item": "급식비 정산 내역", "iid": "meal-cost-settlement", "loc": "참고자료", "title": "2026학년도 유초중고특수기타학교 학교급식경비 지원계획", "folder": "11_급식비 정산 내역", "fn": "2026학년도_유초중고특수기타학교_학교급식경비_지원계획.hwpx"}, {"id": "F035", "cat": "운영", "sub": "예산 및 재정", "item": "급식비 정산 내역", "iid": "meal-cost-settlement", "loc": "참고자료", "title": "2026년 학교급식 기본방향", "folder": "11_급식비 정산 내역", "fn": "경기도교육청_2026년_학교급식_기본방향.pdf"}, {"id": "F036", "cat": "운영", "sub": "홈페이지 관리", "item": "원산지 및 영양량 표시제", "iid": "origin-nutrition-labeling", "loc": "참고자료", "title": "별표4 영업소 및 집단급식소의 원산지 표시방법", "folder": "12_원산지 및 영양량 표시제", "fn": "별표_4_영업소_및_집단급식소의_원산지_표시방법.pdf"}, {"id": "F037", "cat": "위생", "sub": "위생기본계획", "item": "위생관리지침 및 자료", "iid": "hygiene-guidelines", "loc": "위생관리지침 및 자료 참고자료 › 위생관리지침 모음", "title": "학교급식 위생관리 지침서 제6차 개정본(본책).hwp", "folder": "13_위생관리지침 및 자료", "fn": "학교급식 위생관리 지침서 제6차 개정본(본책).hwp"}, {"id": "F038", "cat": "위생", "sub": "위생기본계획", "item": "위생관리지침 및 자료", "iid": "hygiene-guidelines", "loc": "위생관리지침 및 자료 참고자료 › 위생관리지침 모음", "title": "집단급식소 급식안전관리 매뉴얼 개정안.pdf", "folder": "13_위생관리지침 및 자료", "fn": "집단급식소 급식안전관리 매뉴얼 개정안.pdf"}, {"id": "F039", "cat": "위생", "sub": "위생기본계획", "item": "위생관리지침 및 자료", "iid": "hygiene-guidelines", "loc": "위생관리지침 및 자료 참고자료 › 위생관리지침 모음", "title": "2026년 식품안전관리지침(개정사항 반영).hwpx", "folder": "13_위생관리지침 및 자료", "fn": "2026년 식품안전관리지침(개정사항 반영).hwpx"}, {"id": "F040", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP 및 CP 점검", "iid": "ccp-cp-check", "loc": "참고자료", "title": "CCP 및 CP 점검결과 및 조치 기록지 양식(제6차 개정판)", "folder": "14_CCP 및 CP 점검", "fn": "CCP_및_CP_점검결과_및_조치_기록지_양식(제6차개정판).pdf"}, {"id": "F041", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP 및 CP 점검", "iid": "ccp-cp-check", "loc": "HACCP 자체검증 참고자료 › 온도계 자가 검교정 요령", "title": "온도계 자가 검교정 기록지 양식(제6차 개정판)", "folder": "14_CCP 및 CP 점검", "fn": "온도계_자가_검교정_기록지_양식(제_6차_개정판).pdf"}, {"id": "F042", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "참고자료", "title": "경기도교육청 위생관리지침서(5차개정) CCP기록지요령", "folder": "15_CCP·CP 기록지", "fn": "경기도교육청_위생관리지침서(5차개정)_CCP기록지요령.pdf"}, {"id": "F043", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "참고자료", "title": "교육부·한국교육환경보호원 CCP 기록지 교육자료", "folder": "15_CCP·CP 기록지", "fn": "PPT11.학교급식중요관리점(CCP)기록지(최적화).pdf"}, {"id": "F044", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › 식단검토", "title": "식단 검토 기록지 양식(제6차 개정판).pdf", "folder": "15_CCP·CP 기록지", "fn": "식단 검토 기록지 양식(제6차 개정판).pdf"}, {"id": "F045", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › 식단검토", "title": "경기도교육청 기준 변경사항 - 식단 검토(제5차 개정).pdf", "folder": "15_CCP·CP 기록지", "fn": "경기도교육청 기준 변경사항 - 식단 검토(제5차 개정).pdf"}, {"id": "F046", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › 검수", "title": "식약처 식중독 예방을 위한 식재료 검수 매뉴얼(2016).pdf", "folder": "15_CCP·CP 기록지", "fn": "식약처 식중독 예방을 위한 식재료 검수 매뉴얼(2016).pdf"}, {"id": "F047", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › 검수", "title": "교육부 학교급식 식재료 납품관리 매뉴얼(2014).pdf", "folder": "15_CCP·CP 기록지", "fn": "교육부 학교급식 식재료 납품관리 매뉴얼(2014).pdf"}, {"id": "F048", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › 검수 › 식재료 부적합품 처리", "title": "식재료 부적합품 확인서 양식(제6차 개정판).pdf", "folder": "15_CCP·CP 기록지", "fn": "식재료 부적합품 확인서 양식(제6차 개정판).pdf"}, {"id": "F049", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › 검수 › 식재료 부적합품 처리", "title": "전북교육청 학교급식 이물질 발견 시 대응방안.hwpx", "folder": "15_CCP·CP 기록지", "fn": "전북교육청 학교급식 이물질 발견 시 대응방안.hwpx"}, {"id": "F050", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › 검수 › 검수 방안", "title": "검수서 기록지 양식(제6차 개정판).pdf", "folder": "15_CCP·CP 기록지", "fn": "검수서 기록지 양식(제6차 개정판).pdf"}, {"id": "F051", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리", "title": "CCP 식품취급 및 조리(양식).hwp", "folder": "15_CCP·CP 기록지", "fn": "CCP 식품취급 및 조리(양식).hwp"}, {"id": "F052", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리 › CCP1A. 장소 구분이 될 경우 매뉴얼·기록지", "title": "CCP1A 식품취급 및 조리(예시).pdf", "folder": "15_CCP·CP 기록지", "fn": "CCP1A 식품취급 및 조리(예시).pdf"}, {"id": "F053", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리 › CCP1B. 장소 구분이 안 될 경우 매뉴얼·기록지", "title": "CCP1B 식품취급 및 조리(예시).pdf", "folder": "15_CCP·CP 기록지", "fn": "CCP1B 식품취급 및 조리(예시).pdf"}, {"id": "F054", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › CCP2A. 단독조리 · 식생활교육관(식당) 배식", "title": "CCP2A 조리완료 및 배식(예시).pdf", "folder": "15_CCP·CP 기록지", "fn": "CCP2A 조리완료 및 배식(예시).pdf"}, {"id": "F055", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › CCP2B. 단독조리 · 교실배식", "title": "CCP2B 조리완료 및 배식(예시).pdf", "folder": "15_CCP·CP 기록지", "fn": "CCP2B 조리완료 및 배식(예시).pdf"}, {"id": "F056", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CP1. 냉장·냉동고(실) 온도관리", "title": "CP1 냉장·냉동고(실) 온도관리(양식).hwp", "folder": "15_CCP·CP 기록지", "fn": "CP1 냉장·냉동고(실) 온도관리(양식).hwp"}, {"id": "F057", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CP1. 냉장·냉동고(실) 온도관리", "title": "CP1 냉장·냉동고(실) 온도관리 기록지 양식(제6차 개정판).pdf", "folder": "15_CCP·CP 기록지", "fn": "CP1 냉장·냉동고(실) 온도관리 기록지 양식(제6차 개정판).pdf"}, {"id": "F058", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CP2. 식품접촉 표면 세척 및 소독", "title": "CP2 식품접촉표면 세척 및 소독(양식).hwp", "folder": "15_CCP·CP 기록지", "fn": "CP2 식품접촉표면 세척 및 소독(양식).hwp"}, {"id": "F059", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "CCP/CP 기록지", "iid": "ccp-cp-record", "loc": "CCP/CP 기록지 참고자료 › CP2. 식품접촉 표면 세척 및 소독", "title": "CP2 식품접촉표면 세척 및 소독 기록지 양식(제6차 개정판).pdf", "folder": "15_CCP·CP 기록지", "fn": "CP2 식품접촉표면 세척 및 소독 기록지 양식(제6차 개정판).pdf"}, {"id": "F060", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "일일위생점검", "iid": "daily-hygiene-check", "loc": "참고자료", "title": "(경기도교육청) 일일위생점검표", "folder": "16_일일위생점검", "fn": "(경기도교육청)_일일위생점검표.hwp"}, {"id": "F061", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "일일위생점검", "iid": "daily-hygiene-check", "loc": "참고자료", "title": "주기별 청소계획(표7, 예시)", "folder": "16_일일위생점검", "fn": "(표7)_주기별_청소계획(예시).hwp"}, {"id": "F062", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "일일위생점검", "iid": "daily-hygiene-check", "loc": "참고자료", "title": "주(일)별 세척·청소 점검표(표8, 예시)", "folder": "16_일일위생점검", "fn": "(표8)_주(일)별_세척청소_점검표(예시).hwp"}, {"id": "F063", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "식중독비상대책반 참고자료 › 식중독 표준 업무 지침", "title": "2024년 식중독 표준업무지침.pdf", "folder": "17_식중독 대책반", "fn": "2024년 식중독 표준업무지침.pdf"}, {"id": "F064", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "식중독비상대책반 참고자료 › 식중독 예방 계획", "title": "화성오산교육지원청 2025년 학교(유치원)급식 식중독 예방 및 사고 대비 계획.hwp", "folder": "17_식중독 대책반", "fn": "화성오산교육지원청 2025년 학교(유치원)급식 식중독 예방 및 사고 대비 계획.hwp"}, {"id": "F065", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "식중독비상대책반 참고자료 › 식중독 예방 계획", "title": "학교급식 식중독 예방 계획 및 비상대책반 구성(양식).hwp", "folder": "17_식중독 대책반", "fn": "학교급식 식중독 예방 계획 및 비상대책반 구성(양식).hwp"}, {"id": "F066", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "식중독비상대책반 참고자료 › 식중독 발생 시 대응 절차", "title": "경기도교육청 2025년 식중독 의심환자 발생 시 준비사항.zip", "folder": "17_식중독 대책반", "fn": "경기도교육청 2025년 식중독 의심환자 발생 시 준비사항.zip"}, {"id": "F067", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "월별 식중독 주의 정보 › 1,2월 식중독 주의 정보", "title": "식약처 월간 식중독 주의정보 1월·2월(PDF·이미지)", "folder": "17_식중독 대책반", "fn": "식약처 월간 식중독 주의정보 1월·2월(PDF·이미지)"}, {"id": "F068", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "월별 식중독 주의 정보 › 3,4월 식중독 주의 정보", "title": "식약처 월간 식중독 주의정보 3월·4월(PDF·이미지)", "folder": "17_식중독 대책반", "fn": "식약처 월간 식중독 주의정보 3월·4월(PDF·이미지)"}, {"id": "F069", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "월별 식중독 주의 정보 › 5,6월 식중독 주의 정보", "title": "식약처 월간 식중독 주의정보 5월·6월(PDF·이미지)", "folder": "17_식중독 대책반", "fn": "식약처 월간 식중독 주의정보 5월·6월(PDF·이미지)"}, {"id": "F070", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "월별 식중독 주의 정보 › 7,8월 식중독 주의 정보", "title": "식약처 월간 식중독 주의정보 7월·8월(PDF·이미지)", "folder": "17_식중독 대책반", "fn": "식약처 월간 식중독 주의정보 7월·8월(PDF·이미지)"}, {"id": "F071", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "월별 식중독 주의 정보 › 9,10월 식중독 주의 정보", "title": "식약처 월간 식중독 주의정보 9월·10월(PDF·이미지)", "folder": "17_식중독 대책반", "fn": "식약처 월간 식중독 주의정보 9월·10월(PDF·이미지)"}, {"id": "F072", "cat": "위생", "sub": "위생기본계획", "item": "식중독 대책반", "iid": "food-poisoning-team", "loc": "월별 식중독 주의 정보 › 11,12월 식중독 주의 정보", "title": "식약처 월간 식중독 주의정보 11월·12월(PDF·이미지)", "folder": "17_식중독 대책반", "fn": "식약처 월간 식중독 주의정보 11월·12월(PDF·이미지)"}, {"id": "F073", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 영양교사 위생교육", "title": "영양(교)사 25년(상) 식중독 예방교육.pptx", "folder": "18_위생·HACCP 교육", "fn": "영양(교)사 25년(상) 식중독 예방교육.pptx"}, {"id": "F074", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 영양교사 위생교육", "title": "영양(교)사 25년(하) 식중독 예방교육.pptx", "folder": "18_위생·HACCP 교육", "fn": "영양(교)사 25년(하) 식중독 예방교육.pptx"}, {"id": "F075", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 영양교사 위생교육", "title": "2025 식중독 주의정보 가이드(업무수첩).pdf", "folder": "18_위생·HACCP 교육", "fn": "2025 식중독 주의정보 가이드(업무수첩).pdf"}, {"id": "F076", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 조리종사자 · 대체 · 신규 교육", "title": "조리종사자 연간 위생교육 계획(안).hwp", "folder": "18_위생·HACCP 교육", "fn": "조리종사자 연간 위생교육 계획(안).hwp"}, {"id": "F077", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 조리종사자 · 대체 · 신규 교육", "title": "식약처 집단급식소 조리종사자 단계별 위생관리 매뉴얼(2020).pdf", "folder": "18_위생·HACCP 교육", "fn": "식약처 집단급식소 조리종사자 단계별 위생관리 매뉴얼(2020).pdf"}, {"id": "F078", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 조리종사자 · 대체 · 신규 교육", "title": "조리종사자 25년(상) 식중독 예방교육.pdf", "folder": "18_위생·HACCP 교육", "fn": "조리종사자 25년(상) 식중독 예방교육.pdf"}, {"id": "F079", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 조리종사자 · 대체 · 신규 교육", "title": "식중독예방과 조리종사자 식중독 예방 요령.zip", "folder": "18_위생·HACCP 교육", "fn": "식중독예방과 조리종사자 식중독 예방 요령.zip"}, {"id": "F080", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 조리종사자 · 대체 · 신규 교육", "title": "E북 조리종사자 식중독 예방요령.pdf", "folder": "18_위생·HACCP 교육", "fn": "E북 조리종사자 식중독 예방요령.pdf"}, {"id": "F081", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › 조리종사자 · 대체 · 신규 교육", "title": "대체 조리종사자 교육용 식중독 예방 QUICK 매뉴얼.pdf", "folder": "18_위생·HACCP 교육", "fn": "대체 조리종사자 교육용 식중독 예방 QUICK 매뉴얼.pdf"}, {"id": "F082", "cat": "위생", "sub": "위생 HACCP 서류관리", "item": "위생·HACCP 교육", "iid": "hygiene-haccp-education", "loc": "위생·HACCP 교육자료 참고자료 › HACCP 교육", "title": "교육부 CCP 기록지 교육자료(PPT11).pdf", "folder": "18_위생·HACCP 교육", "fn": "교육부 CCP 기록지 교육자료(PPT11).pdf"}, {"id": "F083", "cat": "위생", "sub": "위생관련증명서", "item": "건강문진 동의서(보건증X)", "iid": "health-consent-form", "loc": "참고자료", "title": "조리종사자에 대한 건강문진 및 동의서 양식", "folder": "19_건강문진 동의서(보건증X)", "fn": "조리종사자에_대한_건강문진_및_동의서.hwp"}, {"id": "F084", "cat": "교육", "sub": "학생대상교육", "item": "필수 교육 자료 (음식물쓰레기/당·나트륨)", "iid": "required-education-material", "loc": "음식물쓰레기 감량화 · 나트륨 및 당류 저감화 교육 › 음식물쓰레기 감량화 계획", "title": "전북교육청_음식물쓰레기 줄이기 교육계획서 예시.hwp", "folder": "20_필수 교육 자료 (음식물쓰레기·당·나트륨)", "fn": "전북교육청_음식물쓰레기 줄이기 교육계획서 예시.hwp"}, {"id": "F085", "cat": "교육", "sub": "학생대상교육", "item": "필수 교육 자료 (음식물쓰레기/당·나트륨)", "iid": "required-education-material", "loc": "음식물쓰레기 감량화 · 나트륨 및 당류 저감화 교육 › 나트륨 및 당류 저감화 계획", "title": "제주특별자치도교육청_2020 신규 및 저경력 학교급식업무매뉴얼.pdf", "folder": "20_필수 교육 자료 (음식물쓰레기·당·나트륨)", "fn": "제주특별자치도교육청_2020 신규 및 저경력 학교급식업무매뉴얼.pdf"}, {"id": "F086", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 학교급식 소개", "title": "학부모연수(식당배식)최종.wmv", "folder": "21_학부모·교직원 교육", "fn": "학부모연수(식당배식)최종.wmv"}, {"id": "F087", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 학교급식 소개", "title": "학부모연수자료_(식당배식).pptx", "folder": "21_학부모·교직원 교육", "fn": "학부모연수자료_(식당배식).pptx"}, {"id": "F088", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 학교급식 소개", "title": "학부모연수(교실배식)최종.wmv", "folder": "21_학부모·교직원 교육", "fn": "학부모연수(교실배식)최종.wmv"}, {"id": "F089", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 학교급식 소개", "title": "학부모연수자료_(교실배식).pptx", "folder": "21_학부모·교직원 교육", "fn": "학부모연수자료_(교실배식).pptx"}, {"id": "F090", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 학교급식 소개", "title": "(학부모총회연수자료)_학교급식 이렇게 운영합니다.pptx", "folder": "21_학부모·교직원 교육", "fn": "(학부모총회연수자료)_학교급식 이렇게 운영합니다.pptx"}, {"id": "F091", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 학교급식 소개", "title": "만남채_OPENDAY 운영 계획서(학교급식공개 행사).hwp", "folder": "21_학부모·교직원 교육", "fn": "만남채_OPENDAY 운영 계획서(학교급식공개 행사).hwp"}, {"id": "F092", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 생태·환경", "title": "서울시교육청 식생활교육길라잡이_55-112쪽.pdf", "folder": "21_학부모·교직원 교육", "fn": "서울시교육청 식생활교육길라잡이_55-112쪽.pdf"}, {"id": "F093", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 소아청소년 비만", "title": "(서울시)23년_학부모연수_초등학교.pdf", "folder": "21_학부모·교직원 교육", "fn": "(서울시)23년_학부모연수_초등학교.pdf"}, {"id": "F094", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 소아청소년 비만", "title": "(서울시)23년_학부모연수_중학교.pdf", "folder": "21_학부모·교직원 교육", "fn": "(서울시)23년_학부모연수_중학교.pdf"}, {"id": "F095", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 소아청소년 비만", "title": "(서울시)23년_학부모연수_고등학교.pdf", "folder": "21_학부모·교직원 교육", "fn": "(서울시)23년_학부모연수_고등학교.pdf"}, {"id": "F096", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 기타 참고자료", "title": "서울시교육청 식생활교육길라잡이_55-112쪽.pdf", "folder": "21_학부모·교직원 교육", "fn": "서울시교육청 식생활교육길라잡이_55-112쪽.pdf"}, {"id": "F097", "cat": "교육", "sub": "학부모·교직원 대상 교육", "item": "학부모·교직원 교육", "iid": "parent-staff-education", "loc": "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 기타 참고자료", "title": "다문화 가정 대상 식품안전·영양 실천 가이드(부모용)_국문.pdf (식품안전나라, 2026)", "folder": "21_학부모·교직원 교육", "fn": "다문화 가정 대상 식품안전·영양 실천 가이드(부모용)_국문.pdf (식품안전나라, 2026)"}, {"id": "F098", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "참고자료", "title": "학생자치회 교육급식부 운영계획서 예시(2019, 경기도교육청 교육급식정보나눔방)", "folder": "22_학생자치 연계 활동", "fn": "교육급식정보나눔방_2019_학생자치회_교육급식부_운영_계획(샘플).hwp"}, {"id": "F099", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 2026 학교급식 기본방향", "title": "2026년 학교급식 기본방향.pdf", "folder": "22_학생자치 연계 활동", "fn": "2026년 학교급식 기본방향.pdf"}, {"id": "F100", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 2026 영양·식생활 교육 정책 기본계획", "title": "2026 영양 식생활 교육 정책 기본 계획.hwpx", "folder": "22_학생자치 연계 활동", "fn": "2026 영양 식생활 교육 정책 기본 계획.hwpx"}, {"id": "F101", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 학생자치 운영 사례", "title": "교육급식정보나눔방 학생자치회 (초) 맞춤형교육급식운영사례.pdf", "folder": "22_학생자치 연계 활동", "fn": "교육급식정보나눔방 학생자치회 (초) 맞춤형교육급식운영사례.pdf"}, {"id": "F102", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 학생자치 운영 사례", "title": "교육급식정보나눔방 프로젝트 (초6) 맞춤형교육급식운영사례.pptx", "folder": "22_학생자치 연계 활동", "fn": "교육급식정보나눔방 프로젝트 (초6) 맞춤형교육급식운영사례.pptx"}, {"id": "F103", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 학생자치 운영 사례", "title": "교육급식정보나눔방 학생자치회 (중) 맞춤형교육급식운영사례.pdf", "folder": "22_학생자치 연계 활동", "fn": "교육급식정보나눔방 학생자치회 (중) 맞춤형교육급식운영사례.pdf"}, {"id": "F104", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 학생자치 운영 사례", "title": "교육급식정보나눔방 캠페인 맞춤형교육급식운영사례.pdf", "folder": "22_학생자치 연계 활동", "fn": "교육급식정보나눔방 캠페인 맞춤형교육급식운영사례.pdf"}, {"id": "F105", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 학생자치 운영 사례", "title": "교육급식 사례공유 잔반제로캠페인.pdf", "folder": "22_학생자치 연계 활동", "fn": "교육급식 사례공유 잔반제로캠페인.pdf"}, {"id": "F106", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 학생자치 운영 사례", "title": "충남교육청 중등 영양식생활교육 동아리 수업 길라잡이.pdf", "folder": "22_학생자치 연계 활동", "fn": "충남교육청 중등 영양식생활교육 동아리 수업 길라잡이.pdf"}, {"id": "F107", "cat": "교육", "sub": "학생자치", "item": "학생자치 연계 활동", "iid": "student-autonomy", "loc": "학생자치활동 참고자료 › 학생자치 운영 사례", "title": "2021 지속가능한 식생활 실천 학생동아리 결과보고서(총괄).pdf", "folder": "22_학생자치 연계 활동", "fn": "2021 지속가능한 식생활 실천 학생동아리 결과보고서(총괄).pdf"}, {"id": "F108", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 생태·환경교육 › 생태·환경교육 근거", "title": "2026영양식생활교육정책_기본계획.hwpx", "folder": "23_영양·식생활 교육자료", "fn": "2026영양식생활교육정책_기본계획.hwpx"}, {"id": "F109", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 생태·환경교육 › 생태·환경교육 근거", "title": "2023년_학생건강과_정책추진_기본계획.pdf", "folder": "23_영양·식생활 교육자료", "fn": "2023년_학생건강과_정책추진_기본계획.pdf"}, {"id": "F110", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 생태·환경교육 › 생태·환경교육 매뉴얼", "title": "2023_생태환경영양식생활교육_매뉴얼(홈페이지용).pdf", "folder": "23_영양·식생활 교육자료", "fn": "2023_생태환경영양식생활교육_매뉴얼(홈페이지용).pdf"}, {"id": "F111", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 생태·환경교육 › 생태·환경교육 매뉴얼", "title": "2022년_생태환경영양식생활교육_매뉴얼.pdf", "folder": "23_영양·식생활 교육자료", "fn": "2022년_생태환경영양식생활교육_매뉴얼.pdf"}, {"id": "F112", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 식품과 영양 › 건강한 식품/간식 선택", "title": "어린이간식선택.pdf", "folder": "23_영양·식생활 교육자료", "fn": "어린이간식선택.pdf"}, {"id": "F113", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 식품과 영양 › 식품구성자전거", "title": "식품구성자전거-학습활동지.hwp", "folder": "23_영양·식생활 교육자료", "fn": "식품구성자전거-학습활동지.hwp"}, {"id": "F114", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 식품과 영양 › 식품과 영양소", "title": "한국건강증진재단_채소랑_과일이랑_여섯가지_숨바꼭질(어린이대상).pdf", "folder": "23_영양·식생활 교육자료", "fn": "한국건강증진재단_채소랑_과일이랑_여섯가지_숨바꼭질(어린이대상).pdf"}, {"id": "F115", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 세계음식", "title": "GLOBAL_FOOD_카드(PDF).pdf", "folder": "23_영양·식생활 교육자료", "fn": "GLOBAL_FOOD_카드(PDF).pdf"}, {"id": "F116", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 향토음식", "title": "2023년_학생건강과_정책추진_기본계획.pdf", "folder": "23_영양·식생활 교육자료", "fn": "2023년_학생건강과_정책추진_기본계획.pdf"}, {"id": "F117", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 향토음식", "title": "교육부학생건강정보센터_추석카드뉴스_2025.pdf", "folder": "23_영양·식생활 교육자료", "fn": "교육부학생건강정보센터_추석카드뉴스_2025.pdf"}, {"id": "F118", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 향토음식", "title": "학생건강정보센터_학교급식_영양(교)사_전통식_문화_교육_2007.hwp", "folder": "23_영양·식생활 교육자료", "fn": "학생건강정보센터_학교급식_영양(교)사_전통식_문화_교육_2007.hwp"}, {"id": "F119", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 향토음식", "title": "전라남도교육청_신토불이_급식이야기.pdf", "folder": "23_영양·식생활 교육자료", "fn": "전라남도교육청_신토불이_급식이야기.pdf"}, {"id": "F120", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 향토음식", "title": "지역_대표음식식재료_가이드(aT).pdf", "folder": "23_영양·식생활 교육자료", "fn": "지역_대표음식식재료_가이드(aT).pdf"}, {"id": "F121", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 향토음식", "title": "한국관광공사_국가대표_음식관광_콘텐츠_33선.pdf", "folder": "23_영양·식생활 교육자료", "fn": "한국관광공사_국가대표_음식관광_콘텐츠_33선.pdf"}, {"id": "F122", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 향토음식", "title": "경기도교육청_2022년생태환경영양식생활교육_매뉴얼.pdf", "folder": "23_영양·식생활 교육자료", "fn": "경기도교육청_2022년생태환경영양식생활교육_매뉴얼.pdf"}, {"id": "F123", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 향토음식", "title": "경기도교육청_학교급식업무매뉴얼(2014.2월).pdf", "folder": "23_영양·식생활 교육자료", "fn": "경기도교육청_학교급식업무매뉴얼(2014.2월).pdf"}, {"id": "F124", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 전통음식", "title": "서울시교육청_오감으로_만나는_음식(학생용).pdf", "folder": "23_영양·식생활 교육자료", "fn": "서울시교육청_오감으로_만나는_음식(학생용).pdf"}, {"id": "F125", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 전통음식", "title": "서울시교육청_오감책자(교사용지도서).pdf", "folder": "23_영양·식생활 교육자료", "fn": "서울시교육청_오감책자(교사용지도서).pdf"}, {"id": "F126", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 전통음식", "title": "07회기_교수활동계획안.hwp", "folder": "23_영양·식생활 교육자료", "fn": "07회기_교수활동계획안.hwp"}, {"id": "F127", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 전통음식", "title": "07회기_수업자료_PPT.pptx", "folder": "23_영양·식생활 교육자료", "fn": "07회기_수업자료_PPT.pptx"}, {"id": "F128", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 전통음식", "title": "08회기_교수활동계획안.hwp", "folder": "23_영양·식생활 교육자료", "fn": "08회기_교수활동계획안.hwp"}, {"id": "F129", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 전통음식", "title": "08회기_수업자료_PPT.pptx", "folder": "23_영양·식생활 교육자료", "fn": "08회기_수업자료_PPT.pptx"}, {"id": "F130", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 음식 문화 › 전통음식", "title": "08회기_활동지.hwp", "folder": "23_영양·식생활 교육자료", "fn": "08회기_활동지.hwp"}, {"id": "F131", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 식생활 › 비만 예방", "title": "돌봄놀이터-컬러링북.pdf", "folder": "23_영양·식생활 교육자료", "fn": "돌봄놀이터-컬러링북.pdf"}, {"id": "F132", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 식품위생 안전 › 알레르기", "title": "1._포스터_초등학교_저학년(A2).pdf", "folder": "23_영양·식생활 교육자료", "fn": "1._포스터_초등학교_저학년(A2).pdf"}, {"id": "F133", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 식품위생 안전 › 손 씻기", "title": "손씻기의날_카드뉴스.pdf", "folder": "23_영양·식생활 교육자료", "fn": "손씻기의날_카드뉴스.pdf"}, {"id": "F134", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 식품위생 안전 › 손 씻기", "title": "231013_KDCA_번개맨_올바른_손씻기_카드뉴스.zip", "folder": "23_영양·식생활 교육자료", "fn": "231013_KDCA_번개맨_올바른_손씻기_카드뉴스.zip"}, {"id": "F135", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 영양교육사례와 교수학습자료 › 중·고등", "title": "식생활교실_2020년_식생활교육_창의수업_모음집.pdf", "folder": "23_영양·식생활 교육자료", "fn": "식생활교실_2020년_식생활교육_창의수업_모음집.pdf"}, {"id": "F136", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 영양교육사례와 교수학습자료 › 중·고등", "title": "2024년식품안전영양교육우수사례모음집.pdf", "folder": "23_영양·식생활 교육자료", "fn": "2024년식품안전영양교육우수사례모음집.pdf"}, {"id": "F137", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 영양교육사례와 교수학습자료 › 중·고등", "title": "2023년_교육과정분과_교수학습과정안(초_중고등_취합본).hwp", "folder": "23_영양·식생활 교육자료", "fn": "2023년_교육과정분과_교수학습과정안(초_중고등_취합본).hwp"}, {"id": "F138", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 영양교육사례와 교수학습자료 › 유치원", "title": "미래유아식생활연구회_동료장학(박은지).hwp", "folder": "23_영양·식생활 교육자료", "fn": "미래유아식생활연구회_동료장학(박은지).hwp"}, {"id": "F139", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 영양교육사례와 교수학습자료 › 유치원", "title": "미래유아식생활연구회_동료장학(박지혜).hwp", "folder": "23_영양·식생활 교육자료", "fn": "미래유아식생활연구회_동료장학(박지혜).hwp"}, {"id": "F140", "cat": "교육", "sub": "학생대상교육", "item": "영양·식생활 교육자료", "iid": "nutrition-education-materials", "loc": "주제별 교육자료 · 영양교육사례와 교수학습자료 › 유치원", "title": "식생활교실_유아_2020년_식생활교육_창의수업_모음집.pdf", "folder": "23_영양·식생활 교육자료", "fn": "식생활교실_유아_2020년_식생활교육_창의수업_모음집.pdf"}, {"id": "F141", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "참고자료", "title": "교육부·시도교육청·한국교육환경보호원 학교영양상담매뉴얼(2025) — 한국인 영양섭취기준·식품구성자전거·식사구성안·권장식사패턴·식품교환표 수록", "folder": "24_영양상담", "fn": "NutritionCounseling_Manual_p182-209.pdf"}, {"id": "F142", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "참고자료", "title": "식약처 실물사진으로 보는 1회 섭취량 참고량(2022)", "folder": "24_영양상담", "fn": "식약처_실물사진으로_보는_1회_섭취량_참고량.pdf"}, {"id": "F143", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "영양상담 매뉴얼 › 영양상담 운영계획서", "title": "광주광역시교육청 학교영양상담 매뉴얼(2010) p.82-105.hwp", "folder": "24_영양상담", "fn": "광주광역시교육청 학교영양상담 매뉴얼(2010) p.82-105.hwp"}, {"id": "F144", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "영양상담 매뉴얼 › 영양상담 운영계획서", "title": "경상남도교육청 학교영양상담 매뉴얼(2010).hwp", "folder": "24_영양상담", "fn": "경상남도교육청 학교영양상담 매뉴얼(2010).hwp"}, {"id": "F145", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "영양상담 매뉴얼 › 영양상담 운영계획서", "title": "영양상담 운영계획서.hwp", "folder": "24_영양상담", "fn": "영양상담 운영계획서.hwp"}, {"id": "F146", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "영양상담 매뉴얼 및 자료 › 교육부 「학교 영양상담 매뉴얼」(2025)", "title": "교육부·시도교육청·교보원 학교영양상담매뉴얼(2025).pdf", "folder": "24_영양상담", "fn": "교육부·시도교육청·교보원 학교영양상담매뉴얼(2025).pdf"}, {"id": "F147", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "영양상담 매뉴얼 및 자료 › 식약처 「영양지수(NQ) 프로그램」(2021)", "title": "취학전 어린이(3~5세) 가이드북.pdf", "folder": "24_영양상담", "fn": "취학전 어린이(3~5세) 가이드북.pdf"}, {"id": "F148", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "영양상담 매뉴얼 및 자료 › 식약처 「영양지수(NQ) 프로그램」(2021)", "title": "학령기(만 6~11세) 가이드북.pdf", "folder": "24_영양상담", "fn": "학령기(만 6~11세) 가이드북.pdf"}, {"id": "F149", "cat": "교육", "sub": "영양상담", "item": "영양상담", "iid": "nutrition-counseling", "loc": "영양상담 매뉴얼 및 자료 › 식약처 「영양지수(NQ) 프로그램」(2021)", "title": "청소년(만 12~18세) 가이드북.pdf", "folder": "24_영양상담", "fn": "청소년(만 12~18세) 가이드북.pdf"}, {"id": "F150", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 교육과정의 이해 › 1. 범교과 학습이란?", "title": "(초등학교) 2022개정교육과정 범교과주제 적용 안내자료.hwp", "folder": "25_정규 교육과정", "fn": "(초등학교) 2022개정교육과정 범교과주제 적용 안내자료.hwp"}, {"id": "F151", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 교육과정의 이해 › 1. 범교과 학습이란?", "title": "(중학교) 2022개정교육과정 범교과주제 적용 안내자료.hwp", "folder": "25_정규 교육과정", "fn": "(중학교) 2022개정교육과정 범교과주제 적용 안내자료.hwp"}, {"id": "F152", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 교육과정의 이해 › 1. 범교과 학습이란?", "title": "(고등학교) 2022개정교육과정 범교과주제 적용 안내자료.hwp", "folder": "25_정규 교육과정", "fn": "(고등학교) 2022개정교육과정 범교과주제 적용 안내자료.hwp"}, {"id": "F153", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 교육과정의 이해 › 2. 창의적 체험활동이란?", "title": "2022개정 창의적체험활동 해설서 (초·중·고)", "folder": "25_정규 교육과정", "fn": "2022개정 창의적체험활동 해설서 (초·중·고)"}, {"id": "F154", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 교육과정의 이해 › 2. 창의적 체험활동이란?", "title": "학교생활기록부 기재요령 - 창의적 체험활동상황 (초·중·고)", "folder": "25_정규 교육과정", "fn": "학교생활기록부 기재요령 - 창의적 체험활동상황 (초·중·고)"}, {"id": "F155", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 교육과정의 이해 › 2. 창의적 체험활동이란?", "title": "2022개정 교육과정 총론 해설서 (초·중·고)", "folder": "25_정규 교육과정", "fn": "2022개정 교육과정 총론 해설서 (초·중·고)"}, {"id": "F156", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 교육과정의 이해 › 2. 창의적 체험활동이란?", "title": "별책40 창의적체험활동 교육과정.pdf", "folder": "25_정규 교육과정", "fn": "별책40 창의적체험활동 교육과정.pdf"}, {"id": "F157", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 영양·식생활 교육이란", "title": "유초중고등학교_영양식생활_교육_가이드라인(2021).pdf", "folder": "25_정규 교육과정", "fn": "유초중고등학교_영양식생활_교육_가이드라인(2021).pdf"}, {"id": "F158", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 영양·식생활 교육 시수 및 방법", "title": "2023년_학생건강과_정책추진_기본계획.pdf", "folder": "25_정규 교육과정", "fn": "2023년_학생건강과_정책추진_기본계획.pdf"}, {"id": "F159", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "매뉴얼 › 영양·식생활 교육 시수 및 방법", "title": "학교영양식생활교육매뉴얼(최종본)-경기도교육청.pdf", "folder": "25_정규 교육과정", "fn": "학교영양식생활교육매뉴얼(최종본)-경기도교육청.pdf"}, {"id": "F160", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 영양·식생활교육 관련 공문", "title": "2026_영양_식생활_교육_정책_기본_계획.hwpx", "folder": "25_정규 교육과정", "fn": "2026_영양_식생활_교육_정책_기본_계획.hwpx"}, {"id": "F161", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 영양·식생활교육 관련 공문", "title": "유초중고등학교_영양식생활_교육_가이드라인(2021).pdf", "folder": "25_정규 교육과정", "fn": "유초중고등학교_영양식생활_교육_가이드라인(2021).pdf"}, {"id": "F162", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 영양·식생활교육 관련 공문", "title": "2023_생태환경영양식생활교육_매뉴얼(경기도교육청).pdf", "folder": "25_정규 교육과정", "fn": "2023_생태환경영양식생활교육_매뉴얼(경기도교육청).pdf"}, {"id": "F163", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 영양·식생활교육 관련 공문", "title": "2023년_학생건강과_정책추진_기본계획.pdf", "folder": "25_정규 교육과정", "fn": "2023년_학생건강과_정책추진_기본계획.pdf"}, {"id": "F164", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 영양·식생활교육 관련 공문", "title": "학교영양식생활교육매뉴얼(2013).pdf", "folder": "25_정규 교육과정", "fn": "학교영양식생활교육매뉴얼(2013).pdf"}, {"id": "F165", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 유치원 교육자료", "title": "유아_영양식생활_교육_안내서.pdf", "folder": "25_정규 교육과정", "fn": "유아_영양식생활_교육_안내서.pdf"}, {"id": "F166", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 초등용 교육자료", "title": "초등학교(학생용_교사용_PPT).zip", "folder": "25_정규 교육과정", "fn": "초등학교(학생용_교사용_PPT).zip"}, {"id": "F167", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 중고등용 교육자료", "title": "중학교(학생용교사용).zip", "folder": "25_정규 교육과정", "fn": "중학교(학생용교사용).zip"}, {"id": "F168", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 중고등용 교육자료", "title": "고등학교(학생용교사용).zip", "folder": "25_정규 교육과정", "fn": "고등학교(학생용교사용).zip"}, {"id": "F169", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 중고등용 교육자료", "title": "식품안전과_건강_카드뉴스(2021식품의약품안전처).pdf", "folder": "25_정규 교육과정", "fn": "식품안전과_건강_카드뉴스(2021식품의약품안전처).pdf"}, {"id": "F170", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 교수학습과정안 및 교육사례", "title": "2024년식품안전영양교육우수사례모음집.pdf", "folder": "25_정규 교육과정", "fn": "2024년식품안전영양교육우수사례모음집.pdf"}, {"id": "F171", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 교수학습과정안 및 교육사례", "title": "2023년_교육과정분과_교수학습과정안(초_중고등_취합본).hwp", "folder": "25_정규 교육과정", "fn": "2023년_교육과정분과_교수학습과정안(초_중고등_취합본).hwp"}, {"id": "F172", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 교수학습과정안 및 교육사례", "title": "2022년_학교급식_우수사례_및_국민_아이디어_공모전_자료집.pdf", "folder": "25_정규 교육과정", "fn": "2022년_학교급식_우수사례_및_국민_아이디어_공모전_자료집.pdf"}, {"id": "F173", "cat": "교육", "sub": "정규 교육과정", "item": "정규 교육과정", "iid": "regular-curriculum", "loc": "참고자료 › 교수학습과정안 및 교육사례", "title": "식생활교실_유아_2020년_식생활교육_창의수업_모음집.pdf", "folder": "25_정규 교육과정", "fn": "식생활교실_유아_2020년_식생활교육_창의수업_모음집.pdf"}], "links": [{"id": "B01", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 건강한 식품/간식 선택", "title": "[슬기로운 간식 선택] 부산광역시교육청 영양교육체험센터, 2021"}, {"id": "B02", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 건강한 식품/간식 선택", "title": "[어린이 간식 선택] 식품안전나라, 2014 (PDF)"}, {"id": "B03", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 건강한 식품/간식 선택", "title": "[제로간식, 제대로 알고먹기] 서울특별시 식생활종합지원센터, 2026"}, {"id": "B04", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 건강한 식품/간식 선택", "title": "[올 여름 인기간식, 알고먹으면 더 맛있어요!] 서울특별시 식생활종합지원센터, 2026"}, {"id": "B05", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 식품구성자전거", "title": "[식품구성자전거] 보건복지부·한국영양학회, 2024"}, {"id": "B06", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 식품구성자전거", "title": "[골라봐! 차려봐! 영양밥상] 부산광역시교육청 영양교육체험관, 2021"}, {"id": "B07", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 식품구성자전거", "title": "[똑똑이와 함께 공부해요! 식품구성자전거와 다섯 가지 식품군] 인천광역시교육청, 2020 (활동지 포함)"}, {"id": "B08", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 식품과 영양소", "title": "[여러가지 색깔의 음식을 먹어요(초4)] 경기도영양교사회, 2020"}, {"id": "B09", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 식품과 영양소", "title": "[내 밥상을 오색 무지개로] 교육부, 2016 (카드뉴스)"}, {"id": "B10", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 식품과 영양소", "title": "[채소랑 과일이랑 여섯가지 숨바꼭질(어린이)] 한국건강증진개발원, 2013"}, {"id": "B11", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 카페인", "title": "[초등 4~6학년 / 카페인을 올바르게 섭취해요] 학교안전공제중앙회, 2025"}, {"id": "B12", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 카페인", "title": "[카페인의 올바른 이해] 대구미래교육연구원, 2024"}, {"id": "B13", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 카페인", "title": "[청소년의 카페인 섭취: 졸리고 피곤할 때마다 카페인?] 서울시 식생활종합지원센터, 2026"}, {"id": "B14", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 카페인", "title": "[청소년 고카페인 음료 섭취, 고등학생은 여전히 높아] 한국건강증진개발원, 2026"}, {"id": "B15", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 카페인", "title": "[청소년의 카페인 섭취: 졸음을 없애는 게 아니라 미루는 것!] 서울시 식생활종합지원센터, 2026"}, {"id": "B16", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 카페인", "title": "[고카페인 음료] 교육부·학생건강정보센터, 2016 (카드뉴스)"}, {"id": "B17", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 영양표시제", "title": "[영양표시 확인하기] 대구미래교육연구원, 2024"}, {"id": "B18", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 영양표시제", "title": "[꼭 확인하세요! 영양표시 애니메이션] 식약처, 2019"}, {"id": "B19", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 영양표시제", "title": "[영양표시 읽고 나에게 맞는 식품 선택하기!] 식약처, 2022"}, {"id": "B20", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 영양표시제", "title": "[슬기로운 식약탐구생활! 너도 영양표시 읽을 수 있어!] 식약처, 2020"}, {"id": "B21", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 영양표시제", "title": "[영양표시제] 교육부·학생건강정보센터, 2020 (카드뉴스)"}, {"id": "B22", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 탄산음료", "title": "[KBS] 1주일에 탄산음료 1~2잔, 10년 후 확인된 '위험한 결과', 2025"}, {"id": "B23", "item": "영양·식생활 교육자료", "loc": "식품과 영양 › 탄산음료", "title": "[탄산음료 멀리하기] 교육부·학생건강정보센터, 2016 (카드뉴스)"}, {"id": "B24", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 세계음식", "title": "[영양·식생활 교육콘텐츠 크리에이터 - 세계음식 어디까지 먹어봤니(스페인·태국·프랑스) _맛있지구] 학교급식 통합플랫폼·한국교육환경보호원, 2026"}, {"id": "B25", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 세계음식", "title": "[세계음식문화 동영상 교육콘텐츠] 부산광역시 영양교육체험센터, 2025 (영상 12편)"}, {"id": "B26", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 세계음식", "title": "[(경북학교급식TV) 초등 4학년 영양식생활 세계음식문화] 경북교육청, 2023"}, {"id": "B27", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 세계음식", "title": "[나라별 세계음식카드 _부산 양동초] 학교급식 통합플랫폼, 2026 (PDF)"}, {"id": "B28", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 전통음식", "title": "[오감으로 만나는 고추장] 부산광역시교육청 영양교육체험센터, 2021·2024"}, {"id": "B29", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 전통음식", "title": "[영양교육콘텐츠 김치] 부산광역시교육청 영양교육체험센터, 2021·2025"}, {"id": "B30", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 전통음식", "title": "[오감으로 만나는 우리음식 교과서] 교육부·서울시교육청, 2010 (학생용 교과서 + 교사용 지도서)"}, {"id": "B31", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 전통음식", "title": "[도전! 김치담그기] 농사로·농촌진흥청 (교수활동계획안 + PPT)"}, {"id": "B32", "item": "영양·식생활 교육자료", "loc": "음식 문화 › 전통음식", "title": "[그때그때 달라요~ 김치맛] 농사로·농촌진흥청 (교수활동계획안 + PPT + 활동지)"}, {"id": "B33", "item": "영양·식생활 교육자료", "loc": "식생활 › 학교급식 알아보기", "title": "[학교급식 알기 교육자료] 교육부, 2023"}, {"id": "B34", "item": "영양·식생활 교육자료", "loc": "식생활 › 학교급식 알아보기", "title": "[학교급식 그것이 알고싶니] 인천시교육청, 2022"}, {"id": "B35", "item": "영양·식생활 교육자료", "loc": "식생활 › 학교급식 알아보기", "title": "[학교급식 알기 교육자료(중·고등학생)] 교육부, 2023"}, {"id": "B36", "item": "영양·식생활 교육자료", "loc": "식생활 › 학교급식 알아보기", "title": "[학교급식이 궁금해요(학생용)] 교육부, 2015"}, {"id": "B37", "item": "영양·식생활 교육자료", "loc": "식생활 › 학교급식 알아보기", "title": "[K-학교급식 발전과정 영상 '같이 만드는 가치'] 교육부, 2024 (식당배식·교실배식 편)"}, {"id": "B38", "item": "영양·식생활 교육자료", "loc": "식생활 › 학교급식 알아보기", "title": "[학교급식이 궁금해요] 교육부·학생건강정보센터, 2016"}, {"id": "B39", "item": "영양·식생활 교육자료", "loc": "식생활 › 학교급식 알아보기", "title": "[급식실에서는 이렇게 해요] 교육부·학생건강정보센터, 2016 (회원가입 필요)"}, {"id": "B40", "item": "영양·식생활 교육자료", "loc": "식생활 › 아침밥", "title": "[온라인영양교육 - 아침식사의 중요성(중학생)] 경기도교육청·경기도영양교사회, 2020"}, {"id": "B41", "item": "영양·식생활 교육자료", "loc": "식생활 › 아침밥", "title": "[아침밥 먹고 다니자 1탄] 제주특별자치도교육청, 2023"}, {"id": "B42", "item": "영양·식생활 교육자료", "loc": "식생활 › 아침밥", "title": "[아침 식사의 중요성 1·2부] 경기온나눔콘텐츠, 2022"}, {"id": "B43", "item": "영양·식생활 교육자료", "loc": "식생활 › 아침밥", "title": "[아침식사, 거르지 마세요!] 서울특별시 식생활종합지원센터, 2022"}, {"id": "B44", "item": "영양·식생활 교육자료", "loc": "식생활 › 아침밥", "title": "[아침밥이 좋아] 교육부 카드뉴스"}, {"id": "B45", "item": "영양·식생활 교육자료", "loc": "식생활 › 식사예절", "title": "[급식실에서 식사예절] 대구미래교육연구원, 2024 (영상+활동지)"}, {"id": "B46", "item": "영양·식생활 교육자료", "loc": "식생활 › 식사예절", "title": "[식사예절을 지킬 수 있어요!] 교육부 학생건강정보센터, 2023"}, {"id": "B47", "item": "영양·식생활 교육자료", "loc": "식생활 › 식사예절", "title": "[바르게 먹어요] 대구미래교육연구원, 2024 (영상+활동지)"}, {"id": "B48", "item": "영양·식생활 교육자료", "loc": "식생활 › 식사예절", "title": "[(초등저학년) 식사예절 교육영상 빨간모자편] 식생활교실, 2021"}, {"id": "B49", "item": "영양·식생활 교육자료", "loc": "식생활 › 식사예절", "title": "[숟가락·젓가락 올바르게 사용하자] 서울시교육청보건안전진흥원, 2020"}, {"id": "B50", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 식품첨가물", "title": "[식품첨가물 영양수업] 친절한희선쌤TV(경기교사회), 2021"}, {"id": "B51", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 식품첨가물", "title": "[식품첨가물이 없으면 어떻게 될까?] 식약처, 2026"}, {"id": "B52", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 식품첨가물", "title": "[(초등 1~3학년) 식품 첨가물 안전에 대해 알아보기] 국민안전교육플랫폼, 2026"}, {"id": "B53", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 식품첨가물", "title": "[식품첨가물 카드뉴스 모음 — 감미료·산화방지제 등] 식약처, 2025"}, {"id": "B54", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 식품첨가물", "title": "[식품첨가물 교육자료·교사지도안(초, 중~고)] 식품안전나라, 2022"}, {"id": "B55", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 식품첨가물", "title": "[식생활가이드 - 식품첨가물(중학생)] 교육부·식약처"}, {"id": "B56", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 식중독 예방", "title": "[2025 찾아가는 위생 교육 뮤지컬 — 빨간모자의 안전한 도시락 지키기 대소동 '식중독 예방 수칙 song'] 교육부·한국교육환경보호원, 2025"}, {"id": "B57", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[영양식생활교육 - 손을 깨끗이 씻어요] 대구미래교육연구원, 2024"}, {"id": "B58", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[뽀로로 손씻기 영상] 식약처, 2023"}, {"id": "B59", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[(유)·(초등 저학년) 학교 감염병 바로알기 - 손씻기] 교육부, 2023"}, {"id": "B60", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[손을 깨끗하게 씻을 수 있어요!] 부산시교육청 영양교육체험센터, 2023"}, {"id": "B61", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[유치원 영양식생활 올바른 손씻기] 질병관리청 아프지마TV, 2024"}, {"id": "B62", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[손씻기 6단계 수칙 교육영상] 질병관리청, 2019"}, {"id": "B63", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[2019 손씻기 실험영상] 교육부, 2019"}, {"id": "B64", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[손씻기 실태조사 결과 기반 올바른 손씻기 안내] 질병관리청·국제한인간호재단, 2024 (PDF)"}, {"id": "B65", "item": "영양·식생활 교육자료", "loc": "식품위생 안전 › 손 씻기", "title": "[올바른 손씻기에 대해 알아보아요!] 질병관리청, 2023 (카드뉴스 묶음)"}, {"id": "B66", "item": "알레르기 유발식품 표시제", "loc": "참고자료(동영상)", "title": "동영상 교육자료(알레르기), 서울시교육청보건안전진흥원(2023)"}, {"id": "B67", "item": "축산물등급표시제", "loc": "참고자료(동영상)", "title": "축산물이력제 준수사항 안내(2024)"}], "items": [{"id": "hygiene-guidelines", "name": "위생관리지침 및 자료", "cat": "위생"}, {"id": "ccp-cp-check", "name": "CCP 및 CP 점검", "cat": "위생"}, {"id": "ccp-cp-record", "name": "CCP/CP 기록지", "cat": "위생"}, {"id": "hygiene-education-cert", "name": "위생교육 수료증", "cat": "위생"}, {"id": "disinfection-certificate", "name": "소독필증", "cat": "위생"}, {"id": "health-checkup-report", "name": "건강진단결과서(구 보건증)", "cat": "위생"}, {"id": "daily-hygiene-check", "name": "일일위생점검", "cat": "위생"}, {"id": "food-poisoning-team", "name": "식중독 대책반", "cat": "위생"}, {"id": "hygiene-haccp-education", "name": "위생·HACCP 교육", "cat": "위생"}, {"id": "health-consent-form", "name": "건강문진 동의서(보건증X)", "cat": "위생"}, {"id": "milk-program", "name": "우유", "cat": "운영"}, {"id": "food-cost-ratio-disclosure", "name": "식품비 사용비율 공개", "cat": "운영"}, {"id": "monthly-menu-table", "name": "월별식단표", "cat": "운영"}, {"id": "school-committee-review", "name": "학교운영위원회 심의자료", "cat": "운영"}, {"id": "nutrition-education-plan", "name": "영양 식생활 교육 계획서", "cat": "운영"}, {"id": "lunch-subcommittee", "name": "급식소위원회", "cat": "운영"}, {"id": "allergy-labeling", "name": "알레르기 유발식품 표시제", "cat": "운영"}, {"id": "livestock-grading", "name": "축산물등급표시제", "cat": "운영"}, {"id": "two-way-board", "name": "쌍방향 급식게시판", "cat": "운영"}, {"id": "food-survey", "name": "학교급식 설문조사", "cat": "운영"}, {"id": "supply-quotes", "name": "소모품/비품 견적서", "cat": "운영"}, {"id": "operation-plan", "name": "학교급식 운영계획서", "cat": "운영"}, {"id": "meal-monitoring", "name": "급식모니터링", "cat": "운영"}, {"id": "food-photo", "name": "식단사진", "cat": "운영"}, {"id": "market-research", "name": "시장조사 /현품설명서", "cat": "운영"}, {"id": "standard-recipe", "name": "표준레시피", "cat": "운영"}, {"id": "meal-cost-settlement", "name": "급식비 정산 내역", "cat": "운영"}, {"id": "origin-nutrition-labeling", "name": "원산지 및 영양량 표시제", "cat": "운영"}, {"id": "facility-improvement", "name": "시설개선비", "cat": "운영"}, {"id": "supplementary-budget", "name": "추가경정예산서", "cat": "운영"}, {"id": "required-education-material", "name": "필수 교육 자료 (음식물쓰레기/당·나트륨)", "cat": "교육"}, {"id": "parent-staff-education", "name": "학부모·교직원 교육", "cat": "교육"}, {"id": "student-autonomy", "name": "학생자치 연계 활동", "cat": "교육"}, {"id": "nutrition-education-materials", "name": "영양·식생활 교육자료", "cat": "교육"}, {"id": "nutrition-counseling", "name": "영양상담", "cat": "교육"}, {"id": "regular-curriculum", "name": "정규 교육과정", "cat": "교육"}], "rows": {"ccp-cp-check": ["HACCP 자체검증 참고자료 › 검증이란?", "HACCP 자체검증 참고자료 › 온도계 자가 검교정 요령", "HACCP 자체검증 참고자료 › 미생물 검사", "HACCP 자체검증 참고자료 › HACCP 팀"], "hygiene-guidelines": ["위생관리지침 및 자료 참고자료 › 위생관리지침 모음", "위생관리지침 및 자료 참고자료 › 위생관련과태료", "위생관리지침 및 자료 참고자료 › 위생관련법령"], "ccp-cp-record": ["CCP/CP 기록지 참고자료 › 식단검토", "CCP/CP 기록지 참고자료 › 검수", "CCP/CP 기록지 참고자료 › 검수 › 검수란", "CCP/CP 기록지 참고자료 › 검수 › 검수 시 유의사항", "CCP/CP 기록지 참고자료 › 검수 › 식재료 부적합품 처리", "CCP/CP 기록지 참고자료 › 검수 › 검수 방안", "CCP/CP 기록지 참고자료 › 검수 › 학교급식 품질관리기준", "CCP/CP 기록지 참고자료 › 검수 › 식재료 보관", "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리", "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리 › CCP1. 식품 취급 및 조리란?", "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리 › 채소·과일 소독", "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리 › 가열조리", "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리 › CCP1A. 장소 구분이 될 경우 매뉴얼·기록지", "CCP/CP 기록지 참고자료 › CCP1. 식품취급 및 조리 › CCP1B. 장소 구분이 안 될 경우 매뉴얼·기록지", "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식", "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › 조리완료 및 배식이란?", "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › 시간과 온도관리가 필요한 식단", "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › 운반", "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › 배식", "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › CCP2A. 단독조리 · 식생활교육관(식당) 배식", "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › CCP2B. 단독조리 · 교실배식", "CCP/CP 기록지 참고자료 › CCP2. 조리완료 및 배식 › CCP2C. 공동조리", "CCP/CP 기록지 참고자료 › CP1. 냉장·냉동고(실) 온도관리", "CCP/CP 기록지 참고자료 › CP2. 식품접촉 표면 세척 및 소독", "CCP/CP 기록지 참고자료 › 선행요건 관리"], "food-poisoning-team": ["식중독비상대책반 참고자료 › 식중독이란", "식중독비상대책반 참고자료 › 감염병과 식중독의 차이", "식중독비상대책반 참고자료 › 식중독 표준 업무 지침", "식중독비상대책반 참고자료 › 식중독 대책반 구성", "식중독비상대책반 참고자료 › 식중독 예방 계획", "식중독비상대책반 참고자료 › 식중독 발생 시 대응 절차", "식중독비상대책반 참고자료 › 식중독 관련 과태료", "월별 식중독 주의 정보 › 1,2월 식중독 주의 정보", "월별 식중독 주의 정보 › 3,4월 식중독 주의 정보", "월별 식중독 주의 정보 › 5,6월 식중독 주의 정보", "월별 식중독 주의 정보 › 7,8월 식중독 주의 정보", "월별 식중독 주의 정보 › 9,10월 식중독 주의 정보", "월별 식중독 주의 정보 › 11,12월 식중독 주의 정보", "월별 식중독 주의 정보 › 식중독 관련 정보(식품안전나라)"], "hygiene-haccp-education": ["위생·HACCP 교육자료 참고자료 › 학생 위생교육", "위생·HACCP 교육자료 참고자료 › 영양교사 위생교육", "위생·HACCP 교육자료 참고자료 › 교직원 연수 및 학부모 교육", "위생·HACCP 교육자료 참고자료 › 조리종사자 · 대체 · 신규 교육", "위생·HACCP 교육자료 참고자료 › HACCP 교육"], "meal-monitoring": ["급식모니터링 절차 › 계획수립 — 3월", "급식모니터링 절차 › 모니터단 신청안내 가정통신문 배부", "급식모니터링 절차 › 학부모 모니터요원 구성·위촉·교육 — 4월", "급식모니터링 절차 › 학부모 모니터 활동 시작 — 학기 중 상시"], "meal-cost-settlement": ["학교급식비 예산운영 절차 › 연간 급식일수 결정 — 학사일정에 의함", "학교급식비 예산운영 절차 › 예산요구서 작성 — 사업담당자별 작성·제출", "학교급식비 예산운영 절차 › 예산안 확정", "학교급식비 예산운영 절차 › 학교운영위원회 심의(자문)", "학교급식비 예산운영 절차 › 예산 집행의 기본원칙 준수", "학교급식비 예산운영 절차 › 예산의 집행"], "nutrition-counseling": ["영양상담 매뉴얼 › 영양상담이란?", "영양상담 매뉴얼 › 영양상담 방법 및 과정", "영양상담 매뉴얼 › 영양상담 운영계획서", "영양상담 매뉴얼 및 자료 › 교육부 「학교 영양상담 매뉴얼」(2025)", "영양상담 매뉴얼 및 자료 › 식약처 「영양지수(NQ) 프로그램」(2021)"], "student-autonomy": ["학생자치활동 참고자료 › 2026 학교급식 기본방향", "학생자치활동 참고자료 › 2026 영양·식생활 교육 정책 기본계획", "학생자치활동 참고자료 › 학생자치 운영 사례"], "nutrition-education-plan": ["교육내용 (2026 학교급식 기본방향 Ⅴ 추진방향) › 건강한 식생활 및 영양교육", "교육내용 (2026 학교급식 기본방향 Ⅴ 추진방향) › 기본인성을 함양하는 학생주도 실천중심 영양식생활 교육", "교육내용 (2026 학교급식 기본방향 Ⅴ 추진방향) › 학교 영양상담 프로그램 운영", "교육내용 (2026 학교급식 기본방향 Ⅴ 추진방향) › 학생 자치 활동 연계 학교급식 운영 참여 활성화", "교육내용 (2026 학교급식 기본방향 Ⅴ 추진방향) › 자율·선택급식 운영", "교육내용 (2026 학교급식 기본방향 Ⅴ 추진방향) › 음식물쓰레기 줄이기 교육 강화"], "required-education-material": ["음식물쓰레기 감량화 · 나트륨 및 당류 저감화 교육 › 음식물쓰레기 감량화 계획", "음식물쓰레기 감량화 · 나트륨 및 당류 저감화 교육 › 음식물쓰레기 감량화 교육자료", "음식물쓰레기 감량화 · 나트륨 및 당류 저감화 교육 › 음식물쓰레기 감량화 참고사이트", "음식물쓰레기 감량화 · 나트륨 및 당류 저감화 교육 › 나트륨 및 당류 저감화 계획", "음식물쓰레기 감량화 · 나트륨 및 당류 저감화 교육 › 나트륨 및 당류 저감화 교육자료", "음식물쓰레기 감량화 · 나트륨 및 당류 저감화 교육 › 나트륨 및 당류 저감화 참고사이트"], "parent-staff-education": ["참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 학교급식 소개", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 식사예절(밥상머리교육)", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 친환경 급식", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 식품 알레르기", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 생태·환경", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 식품구성자전거", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 소아청소년 비만", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 영양표시", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 생애주기별 정보", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 식품안전지식", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 기타 참고자료", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 위생교육자료", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 학기초 연수자료", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 분기별 교육자료", "참고자료 (학교급식 · 식품안전·위생 · 영양·건강 · 참고 자료실) › 기타 연수자료"], "regular-curriculum": ["매뉴얼 › 교육과정의 이해", "매뉴얼 › 교육과정의 이해 › 1. 범교과 학습이란?", "매뉴얼 › 교육과정의 이해 › 2. 창의적 체험활동이란?", "매뉴얼 › 교육과정의 이해 › 자율활동", "매뉴얼 › 교육과정의 이해 › 자치활동", "매뉴얼 › 교육과정의 이해 › 동아리활동", "매뉴얼 › 교육과정의 이해 › 진로활동", "매뉴얼 › 영양·식생활 교육이란", "매뉴얼 › 영양·식생활 교육 내용", "매뉴얼 › 영양·식생활 교육 시수 및 방법", "참고자료 › 영양·식생활교육 관련 공문", "참고자료 › 유치원 교육자료", "참고자료 › 초등용 교육자료", "참고자료 › 중고등용 교육자료", "참고자료 › 교수학습과정안 및 교육사례"], "nutrition-education-materials": ["생태·환경교육 › 생태·환경교육 근거", "생태·환경교육 › 생태·환경교육 매뉴얼", "생태·환경교육 › 교육자료", "식품과 영양 › 건강한 식품/간식 선택", "식품과 영양 › 식품구성자전거", "식품과 영양 › 식품과 영양소", "식품과 영양 › 카페인", "식품과 영양 › 영양표시제", "식품과 영양 › 탄산음료", "음식 문화 › 세계음식", "음식 문화 › 로컬푸드", "음식 문화 › 향토음식", "음식 문화 › 전통음식", "식생활 › 건강한 식습관", "식생활 › 학교급식 알아보기", "식생활 › 아침밥", "식생활 › 비만 예방", "식생활 › 식사예절", "식품위생 안전 › 식품첨가물", "식품위생 안전 › 알레르기", "식품위생 안전 › 식중독 예방", "식품위생 안전 › 손 씻기", "영양교육사례와 교수학습자료 › 초등", "영양교육사례와 교수학습자료 › 중·고등", "영양교육사례와 교수학습자료 › 유치원"]}};
+
+/* ===== 저장소 (설정이 없으면 이 브라우저 안에서만 도는 체험 모드) ===== */
+const DEMO = SUPABASE_KEY.startsWith("__") || !window.supabase;
+let sb = null;
+if(!DEMO) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const store = {
+  async all(){
+    if(DEMO){ try{return JSON.parse(localStorage.getItem("demo-rows")||"[]");}catch(e){return [];} }
+    const {data,error} = await sb.from(TABLE).select("*"); if(error) throw error; return data;
+  },
+  async save(row){
+    row.updated_at = new Date().toISOString();
+    if(DEMO){ const a=await store.all(); const i=a.findIndex(x=>x.id===row.id); if(i<0)a.push(row); else a[i]={...a[i],...row}; localStorage.setItem("demo-rows",JSON.stringify(a)); return; }
+    const {error} = await sb.from(TABLE).upsert(row); if(error) throw error;
+  },
+  async upload(id,file){
+    const ext=(file.name.match(/\.[A-Za-z0-9]{1,6}$/)||[""])[0].toLowerCase();
+    const key=`${id}/${Date.now()}-${Math.random().toString(36).slice(2,7)}${ext}`;
+    if(DEMO) return {path:key,url:/^image\//.test(file.type)?URL.createObjectURL(file):"#demo",name:file.name,size:file.size};
+    const {error} = await sb.storage.from(BUCKET).upload(key,file,{contentType:file.type||"application/octet-stream",upsert:false});
+    if(error) throw error;
+    const url = sb.storage.from(BUCKET).getPublicUrl(key).data.publicUrl;
+    return {path:key,url,name:file.name,size:file.size};
+  }
+};
+
+/* ===== 상태 ===== */
+let ROWS = {};            // id -> row
+let ADMIN=false; let ME = ""; try{ME=localStorage.getItem("arc-me")||"";}catch(e){}
+let tab="files", fCat=null, fSt=null, q="", openGroups=new Set();
+const ST=["대기","완료","교체","삭제","없음"];
+const STC={대기:"var(--wait)",완료:"var(--ok)",교체:"var(--rep)",삭제:"var(--del)",없음:"var(--miss)"};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const kb=n=>n>=1048576?(n/1048576).toFixed(1)+"MB":Math.max(1,Math.round(n/1024))+"KB";
+const when=t=>{if(!t)return "";const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;};
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),2200);}
+const stOf=id=>(ROWS[id]&&ROWS[id].status)||"대기";
+
+/* ===== 입장 ===== */
+function gate(){
+  const ok = (()=>{try{const c=localStorage.getItem("arc-code");ADMIN=c===ADMIN_CODE;return c===TEAM_CODE||ADMIN;}catch(e){return false;}})();
+  if(ok && ME){ start(); return; }
+  sheet(`<h3>자료 모으기에 들어가기</h3><p>팀 코드와 선생님 이름을 넣어 주세요. 누가 작업했는지 이름이 함께 남아요.</p>
+    <input id="gcode" placeholder="팀 코드" ${DEMO?'value="'+esc(TEAM_CODE)+'"':""}><input id="gname" placeholder="이름 (예: 이수빈)" value="${esc(ME)}">
+    <div class="err" id="gerr"></div><div class="btns"><button class="pri" onclick="enter()">들어가기</button></div>`);
+  setTimeout(()=>$("#gname").focus(),50);
+}
+function enter(){
+  const c=$("#gcode").value.trim(), n=$("#gname").value.trim();
+  if(c!==TEAM_CODE&&c!==ADMIN_CODE){$("#gerr").textContent="팀 코드가 맞지 않아요.";return;}
+  ADMIN=c===ADMIN_CODE;
+  if(!n){$("#gerr").textContent="이름을 넣어 주세요.";return;}
+  ME=n; try{localStorage.setItem("arc-code",c);localStorage.setItem("arc-me",n);}catch(e){}
+  closeSheet(); start();
+}
+function rename(){ try{localStorage.removeItem("arc-code");}catch(e){} gate(); }
+
+/* ===== 시작·동기화 ===== */
+async function load(){
+  try{ const a=await store.all(); ROWS={}; a.forEach(r=>ROWS[r.id]=r);
+    $("#sync").className="sync"; $("#sync").textContent="최근 불러옴 "+when(new Date()); }
+  catch(e){ $("#sync").className="sync off"; $("#sync").textContent="저장소 연결 실패 — 새로고침해 주세요"; console.error(e); }
+  render();
+}
+function start(){
+  $("#me").innerHTML=`<span>작업자</span> <b>${esc(ME)}</b>${ADMIN?' <span style="color:#d9f85c">(관리자)</span>':''} <button onclick="rename()">이름 바꾸기</button>${ADMIN?' <button onclick="downloadAll()" style="background:#d9f85c;color:#142239;font-weight:800">⬇ 전체 내려받기</button>':''}`;
+  if(DEMO) $("#demo").innerHTML=`<div class="demo"><b>체험 모드</b> — 아직 저장소(Supabase)가 연결되지 않아 이 브라우저 안에서만 저장돼요. 화면 확인용이에요.</div>`;
+  load();
+  setInterval(()=>{ if(!document.hidden && !document.activeElement.matches("textarea,input")) load(); },30000);
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
+}
+
+/* ===== 저장 동작 ===== */
+async function setRow(id,patch,msg){
+  const row={...(ROWS[id]||{id}),...patch,id,worker:ME};
+  try{ await store.save(row); ROWS[id]=row; if(msg) toast(msg); render(); }
+  catch(e){ console.error(e); toast("저장하지 못했어요. 인터넷 연결을 확인해 주세요."); }
+}
+let pickFor=null;
+function pick(id,mode){ pickFor={id,mode}; const p=$("#picker"); p.value=""; p.click(); }
+$("#picker").addEventListener("change",async e=>{
+  const fs=[...e.target.files]; if(!fs.length||!pickFor) return;
+  const {id,mode}=pickFor; const big=fs.find(f=>f.size>50*1048576);
+  if(big){ toast(`${big.name}은(는) 50MB가 넘어 올릴 수 없어요. 메모에 적어 주세요.`); return; }
+  const el=document.querySelector(`[data-row="${id}"]`); el&&el.classList.add("busy"); toast("올리는 중… "+fs.length+"개");
+  try{
+    const ups=[]; for(const f of fs) ups.push(await store.upload(id,f));
+    const prev=(ROWS[id]&&ROWS[id].files)||[];
+    const files=(mode==="replace")?ups:prev.concat(ups);
+    const patch={files,status:mode==="replace"?"교체":"완료"};
+    await setRow(id,patch,`${fs.length}개 올렸어요 ✓`);
+    if(mode==="replace") askTitle(id);
+  }catch(err){ console.error(err); toast("올리지 못했어요: "+(err.message||"오류")); el&&el.classList.remove("busy"); }
+});
+function askTitle(id){
+  const c=CATALOG.files.find(x=>x.id===id); const cur=(ROWS[id]&&ROWS[id].new_title)||c.title.replace(/제?\s?5차/g,"제6차");
+  sheet(`<h3>새 자료 이름</h3><p>사이트에 보일 이름을 새 파일에 맞게 고쳐 주세요.</p><input id="nt" value="${esc(cur)}">
+    <div class="btns"><button onclick="closeSheet()">그대로 두기</button><button class="pri" onclick="saveTitle('${id}')">저장</button></div>`);
+}
+function saveTitle(id){ const v=$("#nt").value.trim(); closeSheet(); if(v) setRow(id,{new_title:v},"이름을 바꿨어요"); }
+function mark(id,st){
+  const cur=stOf(id);
+  if(cur===st){ setRow(id,{status:(ROWS[id].files||[]).length||ROWS[id].kind?"완료":"대기"},"표시를 취소했어요"); return; }
+  setRow(id,{status:st},{삭제:"삭제로 표시했어요",없음:"노션에 없음으로 표시했어요"}[st]||"저장했어요");
+}
+function memo(id,el){ const v=el.value.trim(); if(v===((ROWS[id]&&ROWS[id].memo)||"")) return; setRow(id,{memo:v},"메모 저장 ✓"); }
+const splitUrls=s=>String(s||"").split(/[\s,]+/).map(x=>x.trim()).filter(Boolean);
+function urlsOk(s){ const a=splitUrls(s); return a.every(u=>/^https?:\/\//.test(u)); }
+function urlBox(v){ return `<div class="ubox"><input class="uin" type="url" placeholder="https://… 주소 붙여 넣기" value="${esc(v||"")}"><button type="button" class="ux" title="이 칸 지우기" onclick="this.parentElement.remove()">✕</button></div>`; }
+function urlBoxes(id,val){ const a=splitUrls(val); return `<div class="ulist" id="ul-${id}">${(a.length?a:[""]).map(urlBox).join("")}</div>`; }
+function addUrlBox(id){ const l=document.getElementById("ul-"+id); l.insertAdjacentHTML("beforeend",urlBox("")); l.lastElementChild.querySelector("input").focus(); }
+const readBoxes=id=>[...document.querySelectorAll(`#ul-${id} .uin`)].map(i=>i.value.trim()).filter(Boolean);
+function saveUrl(id){ const v=readBoxes(id).join("\n");
+  if(v && !urlsOk(v)){ toast("주소는 모두 https:// 로 시작해야 해요"); return; }
+  setRow(id,{url:v,status:v?"완료":"대기"},v?"주소 저장 ✓":"주소를 지웠어요"); }
+function rmFile(id,i){ if(!confirm("이 파일을 목록에서 뺄까요?")) return; const f=[...(ROWS[id].files||[])]; f.splice(i,1); setRow(id,{files:f,status:f.length?stOf(id):"대기"},"파일을 뺐어요"); }
+
+/* ===== 추가 자료 ===== */
+let addFiles=[];
+async function addItem(){
+  const iid=$("#a-item").value, title=$("#a-title").value.trim(), url=readBoxes("a").join("\n");
+  if(!iid||!title){ toast("업무와 자료 이름을 넣어 주세요"); return; }
+  if(!addFiles.length && !url){ toast("파일을 고르거나 링크 주소를 넣어 주세요"); return; }
+  if(url && !urlsOk(url)){ toast("주소는 모두 https:// 로 시작해야 해요"); return; }
+  const id="N"+Date.now().toString(36);
+  try{
+    toast("올리는 중…"); const files=[]; for(const f of addFiles) files.push(await store.upload(id,f));
+    await setRow(id,{kind:"add",item_id:iid,new_title:title,url:splitUrls(url).join("\n")||null,files,status:"완료"},"추가했어요 ✓");
+    addFiles=[]; $("#a-title").value=""; document.getElementById("ul-a").innerHTML=urlBox(""); $("#a-fn").textContent="";
+  }catch(e){ console.error(e); toast("추가하지 못했어요"); }
+}
+
+
+/* ===== 관리자: 전체 내려받기 (zip) ===== */
+const safe=s=>String(s||"").replace(/[\\/:*?"<>|]/g,"·").trim();
+function csvCell(v){ v=String(v??""); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+async function downloadAll(){
+  if(!window.JSZip){ toast("압축 도구를 불러오지 못했어요. 새로고침 후 다시 눌러 주세요."); return; }
+  await load();
+  const zip=new JSZip(); const jobs=[];
+  const log=[["번호","구분","업무","폴더","자료 이름","새 이름","상태","파일","링크 주소","메모","작업자","작업 시각"]];
+  CATALOG.files.forEach(x=>{
+    const r=ROWS[x.id]||{}, st=stOf(x.id), fs=r.files||[];
+    fs.forEach((f,i)=>{ if(st!=="삭제") jobs.push({url:f.url,path:`${x.folder}/${x.id}${fs.length>1?"-"+(i+1):""}_${safe(f.name)}`}); });
+    log.push([x.id,"첨부파일",x.item,x.folder,x.title,r.new_title||"",st,fs.map(f=>f.name).join(" / "),"",r.memo||"",r.worker||"",r.updated_at||""]);
+  });
+  CATALOG.links.forEach(x=>{ const r=ROWS[x.id]||{};
+    log.push([x.id,"빠진 링크",x.item,"",x.title,"",stOf(x.id),"",r.url||"",r.memo||"",r.worker||"",r.updated_at||""]); });
+  Object.values(ROWS).filter(r=>r.kind==="add").forEach(r=>{
+    const it=CATALOG.items.find(i=>i.id===r.item_id)||{name:""}; const fs=r.files||[];
+    if(r.status!=="삭제") fs.forEach((f,i)=>jobs.push({url:f.url,path:`00_추가자료/추가_${safe(it.name)}_${safe(r.new_title)}${fs.length>1?"-"+(i+1):""}${(f.name.match(/\.[A-Za-z0-9]{1,6}$/)||[""])[0]}`}));
+    log.push([r.id,"추가 자료",it.name,"00_추가자료","",r.new_title||"",r.status||"",fs.map(f=>f.name).join(" / "),r.url||"",r.memo||"",r.worker||"",r.updated_at||""]);
+  });
+  Object.values(ROWS).filter(r=>r.kind==="photo").forEach((r,k)=>{
+    const it=CATALOG.items.find(i=>i.id===r.item_id)||{name:""}; const f=(r.files||[])[0];
+    if(f && r.status!=="삭제") jobs.push({url:f.url,path:`00_사진/${safe(it.name)}/${String(k+1).padStart(3,"0")}_${safe(r.new_title||"사진")}${(f.name.match(/\.[A-Za-z0-9]{1,6}$/)||[".jpg"])[0]}`});
+    log.push([r.id,"사진",it.name,"00_사진",(f&&f.row)||"업무 페이지",(r.new_title||"")+(f&&f.cover?" [표지]":""),r.status||"",f?f.name:"",r.url||"",r.memo||"",r.worker||"",r.updated_at||""]);
+  });
+  zip.file("작업기록.csv","﻿"+log.map(r=>r.map(csvCell).join(",")).join("\r\n"));
+  zip.file("작업기록.json",JSON.stringify({exported:new Date().toISOString(),rows:Object.values(ROWS)},null,1));
+  let done=0, fail=[];
+  for(const j of jobs){
+    toast(`파일 모으는 중… ${++done}/${jobs.length}`);
+    try{ if(DEMO){ zip.file(j.path,"(체험 모드 — 실제 파일 없음)"); continue; }
+      const res=await fetch(j.url); if(!res.ok) throw new Error(res.status); zip.file(j.path,await res.blob()); }
+    catch(e){ fail.push(j.path); }
+  }
+  if(fail.length) zip.file("받지_못한_파일.txt",fail.join("\r\n"));
+  toast("압축하는 중…");
+  const blob=await zip.generateAsync({type:"blob"},m=>{ if(Math.round(m.percent)%10===0) toast(`압축하는 중… ${Math.round(m.percent)}%`); });
+  const d=new Date(), name=`아카이브_자료_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.zip`;
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
+  toast(`내려받기 시작 ✓ 파일 ${jobs.length-fail.length}개${fail.length?` · 못 받은 파일 ${fail.length}개`:""}`);
+}
+
+
+/* ===== 사진 ===== */
+let photoFiles=[], lastP={item:"",row:""};
+async function shrink(file){
+  if(!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+  try{
+    const bmp=await createImageBitmap(file); const max=1600, s=Math.min(1,max/Math.max(bmp.width,bmp.height));
+    if(s===1 && file.size<1.5*1048576) return file;
+    const c=document.createElement("canvas"); c.width=Math.round(bmp.width*s); c.height=Math.round(bmp.height*s);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.85));
+    if(!blob||blob.size>=file.size) return file;
+    return new File([blob],file.name.replace(/\.(png|webp|jpe?g)$/i,"")+".jpg",{type:"image/jpeg"});
+  }catch(e){ return file; }
+}
+
+let pOpen=new Set(), pq="";
+function pagesOf(iid){ return [""].concat((CATALOG.rows||{})[iid]||[]); }   // "" = 업무 페이지 자체
+const pShort=r=>r?r.split(" › ").slice(-1)[0]:"";
+function photosAt(iid,row){ return Object.values(ROWS).filter(r=>r.kind==="photo"&&r.item_id===iid&&(((r.files||[])[0]||{}).row||"")===row); }
+function openPhotoSheet(iid,row){
+  const it=CATALOG.items.find(i=>i.id===iid)||{name:""};
+  photoFiles=[];
+  sheet(`<h3>🖼 사진 올리기</h3>
+    <p><b>${esc(it.name)}</b>${row?` › <b>${esc(pShort(row))}</b>`:" 페이지"}에 들어갈 사진이에요.</p>
+    <button class="chip" onclick="$('#s-pick').click()" style="margin-bottom:6px">🖼 사진 고르기 (여러 장 가능)</button> <span id="s-fn" style="font-size:12px;color:var(--ink-2)"></span>
+    <input type="file" id="s-pick" accept="image/*" multiple hidden onchange="photoFiles=[...this.files];$('#s-fn').textContent=photoFiles.length+'장 골랐어요'">
+    <input id="s-cap" placeholder="사진 설명 (선택) 예: 1·2월 포스터">
+    <input id="s-link" type="url" placeholder="사진을 누르면 열릴 주소 (선택) https://…">
+    <label style="display:flex;gap:7px;align-items:center;font-size:13px;margin:0 0 10px"><input type="checkbox" id="s-cover" style="width:auto;margin:0"> 카드 맨 위에 크게 보이는 <b>표지 그림</b>이에요</label>
+    <div class="err" id="s-err"></div>
+    <div class="btns"><button onclick="closeSheet()">취소</button><button class="pri" id="s-go" onclick="addPhotos('${iid}','${esc(row).replace(/'/g,"\\'")}')">올리기</button></div>`);
+}
+async function addPhotos(iid,row){
+  const cap=$("#s-cap").value.trim(), link=$("#s-link").value.trim(), cover=$("#s-cover").checked;
+  if(!photoFiles.length){ $("#s-err").textContent="사진을 먼저 골라 주세요."; return; }
+  if(link && !/^https?:\/\//.test(link)){ $("#s-err").textContent="주소는 https:// 로 시작해야 해요."; return; }
+  const bad=photoFiles.find(f=>!/^image\//.test(f.type)); if(bad){ $("#s-err").textContent=bad.name+"은(는) 사진 파일이 아니에요."; return; }
+  $("#s-go").disabled=true;
+  try{
+    let n=0;
+    for(const f0 of photoFiles){
+      $("#s-go").textContent=`올리는 중 ${++n}/${photoFiles.length}`;
+      const f=await shrink(f0); if(f.size>50*1048576) continue;
+      const id="P"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+      const up={...(await store.upload(id,f)),row:row||"",cover};
+      const rec={id,kind:"photo",item_id:iid,new_title:cap||"",url:link||null,files:[up],status:"완료",worker:ME,updated_at:new Date().toISOString()};
+      await store.save(rec); ROWS[id]=rec;
+    }
+    closeSheet(); pOpen.add(iid); toast(`사진 ${n}장 올렸어요 ✓`); render();
+  }catch(e){ console.error(e); $("#s-err").textContent="올리지 못했어요: "+(e.message||"오류"); $("#s-go").disabled=false; $("#s-go").textContent="올리기"; }
+}
+function capEdit(id,el){ const v=el.value.trim(); if(v===((ROWS[id]||{}).new_title||"")) return; setRow(id,{new_title:v},"설명 저장 ✓"); }
+function thumbs(rs){
+  return rs.length?`<div class="pgrid">${rs.sort((a,b)=>(a.updated_at||"").localeCompare(b.updated_at||"")).map(r=>{const f=(r.files||[])[0]||{};const del=r.status==="삭제";
+    return `<div class="pcard ${del?"del":""}"><a href="${esc(f.url)}" target="_blank"><img src="${esc(f.url)}" alt="" loading="lazy"></a>
+      ${f.cover?`<span class="pbadge">표지</span>`:""}
+      ${r.url?`<div class="prow"><a href="${esc(r.url)}" target="_blank">🔗 누르면 이동</a></div>`:""}
+      <input class="pcap" value="${esc(r.new_title||"")}" placeholder="설명 쓰기" onblur="capEdit('${r.id}',this)">
+      <div class="pmeta"><span>${esc(r.worker||"")} · ${when(r.updated_at)}</span><button onclick="mark('${r.id}','삭제')">${del?"↩ 되살리기":"🗑 삭제"}</button></div></div>`;}).join("")}</div>`:"";
+}
+function drawPhotos(L){
+  const q=pq.trim().toLowerCase();
+  let html=`<div class="help" style="margin-bottom:12px">🖼 <b>노션에서 보던 페이지를 찾아</b>, 그 줄의 <b>[🖼 사진 올리기]</b>를 누르면 돼요. 업무 이름을 누르면 안에 있는 페이지들이 펼쳐져요. 영상은 사진 대신 <b>유튜브 링크</b>로 넣어 주세요.</div>
+    <div class="filters"><input placeholder="페이지 이름으로 찾기 (예: 1,2월, 교과서, 손 씻기)" value="${esc(pq)}" oninput="pq=this.value;drawList()"></div>`;
+  ["운영","위생","교육"].forEach(cat=>{
+    CATALOG.items.filter(i=>i.cat===cat).forEach(it=>{
+      const pages=pagesOf(it.id).filter(r=>!q||(it.name+" "+r).toLowerCase().includes(q));
+      if(!pages.length) return;
+      const cnt=Object.values(ROWS).filter(r=>r.kind==="photo"&&r.item_id===it.id&&r.status!=="삭제").length;
+      const open=q||pOpen.has(it.id);
+      html+=`<div class="grp g${cat} ${open?"":"shut"}"><div class="ghead" onclick="this.parentElement.classList.toggle('shut');pOpen.has('${it.id}')?pOpen.delete('${it.id}'):pOpen.add('${it.id}')"><span class="cv">▾</span><b>${esc(it.name)}</b><span class="sub">${cat} · 페이지 ${pagesOf(it.id).length}개</span><span class="gp">${cnt?`사진 ${cnt}장`:""}</span></div>
+        <div class="rows">${pages.map(r=>{const ps=photosAt(it.id,r);
+          return `<div class="prowline"><div class="pname">${r?`📄 ${esc(pShort(r))}<small>${esc(r.split(" › ").slice(0,-1).join(" › "))}</small>`:`🏠 <b>${esc(it.name)}</b> 페이지에 바로 있는 사진<small>세부 페이지가 아닌 업무 페이지 본문</small>`}</div>
+            <button class="pupbtn" onclick="openPhotoSheet('${it.id}','${esc(r).replace(/'/g,"\\'")}')">🖼 사진 올리기${ps.length?` (${ps.filter(x=>x.status!=="삭제").length})`:""}</button>${thumbs(ps)}</div>`;}).join("")}</div></div>`;
+    });
+  });
+  L.innerHTML=html;
+}
+/* ===== 그리기 ===== */
+function counts(list){ const c={대기:0,완료:0,교체:0,삭제:0,없음:0}; list.forEach(x=>c[stOf(x.id)]++); return c; }
+function render(){
+  const all=CATALOG.files.concat(CATALOG.links);
+  const c=counts(all), done=all.length-c.대기;
+  $("#sumTitle").innerHTML=`전체 ${all.length}건 중 <em>${done}건</em> 처리 · 남은 ${c.대기}건`;
+  $("#bar").innerHTML=["완료","교체","삭제","없음"].map(s=>`<i style="width:${c[s]/all.length*100}%;background:${STC[s]}"></i>`).join("");
+  $("#legend").innerHTML=ST.map(s=>`<span style="--c:${STC[s]}">${s} ${c[s]}</span>`).join("")+
+    `<span style="--c:#2D6CDF">추가 자료 ${Object.values(ROWS).filter(r=>r.kind==="add").length}</span>`+
+    `<span style="--c:#D9822B">사진 ${Object.values(ROWS).filter(r=>r.kind==="photo"&&r.status!=="삭제").length}</span>`;
+  const nAdd=Object.values(ROWS).filter(r=>r.kind==="add").length;
+  $("#tabs").innerHTML=[["files",`📄 첨부파일 ${CATALOG.files.length}`],["links",`🔗 빠진 링크 ${CATALOG.links.length}`],["add",`➕ 추가 자료 ${nAdd}`],["photo",`🖼 사진 ${Object.values(ROWS).filter(r=>r.kind==="photo"&&r.status!=="삭제").length}`]]
+    .map(([k,l])=>`<button class="${tab===k?"on":""}" onclick="tab='${k}';fCat=null;render()">${l}</button>`).join("");
+  const fil = (tab==="add"||tab==="photo")?"":
+    `<input placeholder="자료 이름·업무·번호로 찾기" value="${esc(q)}" oninput="q=this.value;drawList()">`+
+    (tab==="files"?["운영","위생","교육"].map(k=>`<button class="chip c${k} ${fCat===k?"on":""}" onclick="fCat=fCat==='${k}'?null:'${k}';render()">${k}</button>`).join(""):"")+
+    ST.map(s=>`<button class="chip ${fSt===s?"on":""}" onclick="fSt=fSt==='${s}'?null:'${s}';render()">${s}</button>`).join("");
+  $("#filters").innerHTML=fil+(tab==="links"?`<div class="linkhelp">💡 앱 안에서가 아니라 <b>인터넷(구글·네이버)</b>에서 자료 제목을 찾아, 나온 페이지 주소를 아래 칸에 붙여 넣는 작업이에요. 자료마다 있는 <b>🔎 구글 / 🔎 네이버</b> 버튼을 누르면 바로 검색돼요.</div>`:"");
+  drawList();
+}
+function match(x){ const s=(x.id+" "+x.title+" "+x.item+" "+(x.loc||"")+" "+((ROWS[x.id]||{}).memo||"")).toLowerCase();
+  return (!q||s.includes(q.toLowerCase())) && (!fSt||stOf(x.id)===fSt) && (!fCat||!x.cat||x.cat===fCat); }
+function fileInfo(r,id){
+  return (r.files||[]).map((f,i)=>`<a class="fl" href="${esc(f.url)}" target="_blank" title="${esc(f.name)}">📎 ${esc(f.name)} · ${kb(f.size)}</a><button class="chip" style="padding:1px 7px" onclick="rmFile('${id}',${i})" title="이 파일 빼기">✕</button>`).join("");
+}
+function rowHTML(x){
+  const r=ROWS[x.id]||{}, st=stOf(x.id);
+  return `<div class="row" data-row="${x.id}">
+    <div class="no">${x.id}</div>
+    <div>
+      <div class="t ${st==="삭제"?"struck":""}">${esc(r.new_title&&r.new_title!==x.title?r.new_title:x.title)}</div>
+      ${r.new_title&&r.new_title!==x.title?`<div class="loc">원래 이름: ${esc(x.title)}</div>`:""}
+      <div class="loc">${esc(x.loc)}</div>
+      <div class="info"><span class="st ${st}">${st}</span>${r.updated_at?`<span class="who">${esc(r.worker||"")} · ${when(r.updated_at)}</span>`:""}${fileInfo(r,x.id)}</div>
+      <textarea class="memo" rows="1" placeholder="메모 (예: 50MB 넘음, 노션 파일 깨짐…)" onblur="memo('${x.id}',this)">${esc(r.memo||"")}</textarea>
+    </div>
+    <div class="acts">
+      <button class="up" onclick="pick('${x.id}','add')">📤 파일 올리기</button>
+      <button class="${st==="교체"?"on":""}" onclick="pick('${x.id}','replace')">🔁 파일 교체</button>
+      <button class="${st==="삭제"?"on":""}" onclick="mark('${x.id}','삭제')">🗑 삭제</button>
+      <button class="${st==="없음"?"on":""}" onclick="mark('${x.id}','없음')">❓ 노션에 없음</button>
+    </div></div>`;
+}
+function linkHTML(x){
+  const r=ROWS[x.id]||{}, st=stOf(x.id);
+  return `<div class="row" data-row="${x.id}">
+    <div class="no">${x.id}</div>
+    <div>
+      <div class="t ${st==="삭제"?"struck":""}">${esc(x.title)}</div>
+      <div class="loc">${esc(x.item)} › ${esc(x.loc)}</div>
+      <div class="info"><span class="st ${st}">${st}</span>${r.updated_at?`<span class="who">${esc(r.worker||"")} · ${when(r.updated_at)}</span>`:""}</div>
+      <div class="url"><a class="gsrch" href="https://www.google.com/search?q=${encodeURIComponent(x.title.replace(/[\[\]]/g," "))}" target="_blank" rel="noopener" title="구글에서 이 자료 찾기">🔎 구글</a><a class="gsrch" href="https://search.naver.com/search.naver?query=${encodeURIComponent(x.title.replace(/[\[\]]/g," "))}" target="_blank" rel="noopener" title="네이버에서 이 자료 찾기">🔎 네이버</a><div class="ucol">${urlBoxes(x.id,r.url)}<button type="button" class="uadd" onclick="addUrlBox('${x.id}')">➕ 주소 추가</button></div><button onclick="saveUrl('${x.id}')">저장</button></div>
+      <textarea class="memo" rows="1" placeholder="메모" onblur="memo('${x.id}',this)">${esc(r.memo||"")}</textarea>
+    </div>
+    <div class="acts">
+      <button class="${st==="삭제"?"on":""}" onclick="mark('${x.id}','삭제')">🗑 삭제</button>
+      <button class="${st==="없음"?"on":""}" onclick="mark('${x.id}','없음')">❓ 못 찾음</button>
+    </div></div>`;
+}
+function drawList(){
+  const L=$("#list");
+  if(tab==="photo"){ drawPhotos(L); return; }
+  if(tab==="add"){
+    const adds=Object.values(ROWS).filter(r=>r.kind==="add").sort((a,b)=>(b.updated_at||"").localeCompare(a.updated_at||""));
+    L.innerHTML=`<div class="addform">
+      <div><label>어느 업무에 넣을까요?</label><select id="a-item"><option value="">업무 고르기</option>${["운영","위생","교육"].map(c=>`<optgroup label="${c}">${CATALOG.items.filter(i=>i.cat===c).map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join("")}</optgroup>`).join("")}</select></div>
+      <div><label>자료 이름 (사이트에 보일 이름)</label><input type="text" id="a-title" placeholder="예: 2026 식중독 예방 리플렛(식약처)"></div>
+      <div class="two"><div><label>파일 (여러 개 가능)</label><br><button class="chip" onclick="$('#a-pick').click()">📎 파일 고르기</button> <span id="a-fn" style="font-size:12px;color:var(--ink-2)"></span><input type="file" id="a-pick" multiple hidden onchange="addFiles=[...this.files];$('#a-fn').textContent=addFiles.map(f=>f.name).join(', ')"></div>
+      <div><label>또는 링크 주소</label>${urlBoxes("a","")}<button type="button" class="uadd" onclick="addUrlBox('a')">➕ 주소 추가</button></div></div>
+      <button class="go" onclick="addItem()">➕ 추가하기</button></div>`+
+      (adds.length?`<div class="grp g교육"><div class="ghead"><b>추가된 자료</b><span class="gp">${adds.length}건</span></div><div class="rows">${adds.map(r=>{
+        const it=CATALOG.items.find(i=>i.id===r.item_id)||{name:"?"};
+        return `<div class="row"><div class="no">추가</div><div><div class="t ${r.status==="삭제"?"struck":""}">${esc(r.new_title)}</div><div class="loc">${esc(it.name)}</div>
+          <div class="info"><span class="who">${esc(r.worker||"")} · ${when(r.updated_at)}</span>${fileInfo(r,r.id)}${splitUrls(r.url).map(u=>`<a class="fl" href="${esc(u)}" target="_blank">🔗 ${esc(u)}</a>`).join("")}${false?`<a class="fl" href="${esc(r.url)}" target="_blank">🔗 ${esc(r.url)}</a>`:""}</div></div>
+          <div class="acts"><button class="${r.status==="삭제"?"on":""}" onclick="mark('${r.id}','삭제')">🗑 취소(삭제)</button></div></div>`;}).join("")}</div></div>`:`<div class="empty">아직 추가된 자료가 없어요</div>`);
+    return;
+  }
+  const src=(tab==="files"?CATALOG.files:CATALOG.links).filter(match);
+  if(!src.length){ L.innerHTML=`<div class="empty">조건에 맞는 자료가 없어요</div>`; return; }
+  const groups=[]; const idx={};
+  src.forEach(x=>{ const k=x.item; if(!(k in idx)){idx[k]=groups.length;groups.push({item:k,cat:x.cat||(CATALOG.items.find(i=>i.name===k)||{}).cat||"교육",sub:x.sub||"",rows:[]});} groups[idx[k]].rows.push(x); });
+  const filtering=!!(q||fSt||fCat);
+  L.innerHTML=groups.map(g=>{
+    const c=counts(g.rows), left=c.대기;
+    const shut=!filtering && !openGroups.has(g.item) && left===0;
+    return `<div class="grp g${g.cat} ${shut?"shut":""}"><div class="ghead" onclick="tg('${esc(g.item).replace(/'/g,"\\'")}',this)"><span class="cv">▾</span><b>${esc(g.item)}</b><span class="sub">${esc(g.cat)}${g.sub?" · "+esc(g.sub):""}</span>
+      <span class="gp">${left?`남은 ${left} / ${g.rows.length}`:`✓ ${g.rows.length}건 끝`}</span></div>
+      <div class="rows">${g.rows.map(tab==="files"?rowHTML:linkHTML).join("")}</div></div>`;}).join("");
+}
+function tg(item,el){ const g=el.parentElement; g.classList.toggle("shut"); if(g.classList.contains("shut")) openGroups.delete(item); else openGroups.add(item); }
+function sheet(h){ $("#sheet").innerHTML=h; $("#scrim").classList.add("on"); }
+function closeSheet(){ $("#scrim").classList.remove("on"); }
+
+render(); gate();
+</script>
+</body>
+</html>
